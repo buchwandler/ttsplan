@@ -1,0 +1,778 @@
+from __future__ import annotations
+
+import math
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+from ._version import __version__
+from .exceptions import PlanFormatError, PlanValidationError, UnsupportedSchemaError
+from .hashing import semantic_hash, unit_hash_payload
+from .language import LanguageRun
+
+FORMAT = "ttsplan"
+SCHEMA_VERSION = 1
+
+
+def _plain(value: Any) -> Any:
+    if hasattr(value, "to_dict"):
+        return value.to_dict()
+    if isinstance(value, Mapping):
+        return {str(k): _plain(v) for k, v in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_plain(v) for v in value]
+    return value
+
+
+@dataclass(frozen=True, slots=True)
+class PlanSource:
+    format: str
+    text: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"format": self.format, "text": self.text}
+
+
+@dataclass(frozen=True, slots=True)
+class PlanTexts:
+    structural: str
+    spoken: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"structural": self.structural, "spoken": self.spoken}
+
+
+@dataclass(frozen=True, slots=True)
+class TextPreparationInfo:
+    backend: str
+    version: str | None
+    source_text: str
+    spoken_text: str
+    languages: tuple[str, ...] = ()
+    replacements: tuple[Mapping[str, Any], ...] = ()
+    offset_map: Mapping[str, Any] | None = None
+    warnings: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return _plain(
+            {
+                "backend": self.backend,
+                "version": self.version,
+                "source_text": self.source_text,
+                "spoken_text": self.spoken_text,
+                "languages": self.languages,
+                "replacements": self.replacements,
+                "offset_map": self.offset_map,
+                "warnings": self.warnings,
+            }
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class AnnotationSpan:
+    structural_start: int
+    structural_end: int
+    attrs: Mapping[str, Any] = field(default_factory=dict)
+    kind: str = "annotation"
+    id: str | None = None
+
+    @property
+    def char_start(self) -> int:
+        return self.structural_start
+
+    @property
+    def char_end(self) -> int:
+        return self.structural_end
+
+    def to_dict(self) -> dict[str, Any]:
+        result: dict[str, Any] = {
+            "structural_start": self.structural_start,
+            "structural_end": self.structural_end,
+            "kind": self.kind,
+            "attrs": _plain(self.attrs),
+        }
+        if self.id is not None:
+            result["id"] = self.id
+        return result
+
+
+@dataclass(frozen=True, slots=True)
+class TokenAnnotation:
+    spoken_start: int
+    spoken_end: int
+    text: str
+    pos: str | None = None
+    tag: str | None = None
+    lemma: str | None = None
+    language: str | None = None
+    id: str | None = None
+
+    @property
+    def start(self) -> int:
+        return self.spoken_start
+
+    @property
+    def end(self) -> int:
+        return self.spoken_end
+
+    def to_dict(self) -> dict[str, Any]:
+        result = {
+            "spoken_start": self.spoken_start,
+            "spoken_end": self.spoken_end,
+            "text": self.text,
+            "pos": self.pos,
+            "tag": self.tag,
+            "lemma": self.lemma,
+            "language": self.language,
+        }
+        if self.id is not None:
+            result["id"] = self.id
+        return result
+
+
+@dataclass(frozen=True, slots=True)
+class BoundaryEvent:
+    id: str
+    position: int
+    kind: str
+    seconds: float | None = None
+    origin: str = "planner"
+    strength: str | None = None
+    attrs: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def pos(self) -> int:
+        return self.position
+
+    @property
+    def duration_s(self) -> float | None:
+        return self.seconds
+
+    def to_dict(self) -> dict[str, Any]:
+        result = {
+            "id": self.id,
+            "position": self.position,
+            "kind": self.kind,
+            "seconds": self.seconds,
+            "origin": self.origin,
+            "strength": self.strength,
+        }
+        if self.attrs:
+            result["attrs"] = _plain(self.attrs)
+        return result
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvedPause:
+    seconds: float = 0.0
+    events: tuple[str, ...] = ()
+
+    @property
+    def duration_s(self) -> float:
+        return self.seconds
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"seconds": self.seconds, "events": list(self.events)}
+
+
+@dataclass(frozen=True, slots=True)
+class VoiceDirective:
+    reference: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"reference": self.reference}
+
+
+@dataclass(frozen=True, slots=True)
+class PronunciationDirective:
+    phonemes: str
+    alphabet: str = "ipa"
+
+    def to_dict(self) -> dict[str, str]:
+        return {"phonemes": self.phonemes, "alphabet": self.alphabet}
+
+
+@dataclass(frozen=True, slots=True)
+class ProsodyDirective:
+    rate: str | None = None
+    pitch: str | None = None
+    volume: str | None = None
+
+    def to_dict(self) -> dict[str, str | None]:
+        return {"rate": self.rate, "pitch": self.pitch, "volume": self.volume}
+
+
+@dataclass(frozen=True, slots=True)
+class EmphasisDirective:
+    level: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"level": self.level}
+
+
+@dataclass(frozen=True, slots=True)
+class AudioDirective:
+    src: str
+    alt_text: str | None = None
+    clip_begin: str | None = None
+    clip_end: str | None = None
+
+    def to_dict(self) -> dict[str, str | None]:
+        return {
+            "src": self.src,
+            "alt_text": self.alt_text,
+            "clip_begin": self.clip_begin,
+            "clip_end": self.clip_end,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class SegmentDirectives:
+    voice: VoiceDirective | None = None
+    pronunciation: PronunciationDirective | None = None
+    prosody: ProsodyDirective | None = None
+    emphasis: EmphasisDirective | None = None
+    audio: AudioDirective | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "voice": _plain(self.voice),
+            "pronunciation": _plain(self.pronunciation),
+            "prosody": _plain(self.prosody),
+            "emphasis": _plain(self.emphasis),
+            "audio": _plain(self.audio),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class PlanSegment:
+    id: str
+    text: str
+    spoken_start: int
+    spoken_end: int
+    language: str
+    paragraph: int = 0
+    sentence: int = 0
+    clause: int = 0
+    structural_start: int | None = None
+    structural_end: int | None = None
+    pause_before: ResolvedPause = field(default_factory=ResolvedPause)
+    pause_after: ResolvedPause = field(default_factory=ResolvedPause)
+    directives: SegmentDirectives = field(default_factory=SegmentDirectives)
+    token_indices: tuple[int, ...] = ()
+    annotation_ids: tuple[str, ...] = ()
+
+    @property
+    def char_start(self) -> int:
+        return self.spoken_start
+
+    @property
+    def char_end(self) -> int:
+        return self.spoken_end
+
+    @property
+    def paragraph_idx(self) -> int:
+        return self.paragraph
+
+    @property
+    def sentence_idx(self) -> int:
+        return self.sentence
+
+    @property
+    def clause_idx(self) -> int:
+        return self.clause
+
+    @property
+    def meta(self) -> dict[str, Any]:
+        return {"language": self.language}
+
+    def to_dict(self) -> dict[str, Any]:
+        result = {
+            "id": self.id,
+            "text": self.text,
+            "spoken_start": self.spoken_start,
+            "spoken_end": self.spoken_end,
+            "language": self.language,
+            "paragraph": self.paragraph,
+            "sentence": self.sentence,
+            "clause": self.clause,
+            "structural_start": self.structural_start,
+            "structural_end": self.structural_end,
+            "pause_before": self.pause_before.to_dict(),
+            "pause_after": self.pause_after.to_dict(),
+            "directives": self.directives.to_dict(),
+            "token_indices": list(self.token_indices),
+            "annotation_ids": list(self.annotation_ids),
+        }
+        return result
+
+
+@dataclass(frozen=True, slots=True)
+class Marker:
+    id: str
+    name: str
+    spoken_position: int
+    attrs: Mapping[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        result = {"id": self.id, "name": self.name, "spoken_position": self.spoken_position}
+        if self.attrs:
+            result["attrs"] = _plain(self.attrs)
+        return result
+
+
+@dataclass(frozen=True, slots=True)
+class PlanUnit:
+    id: str
+    index: int
+    kind: str
+    spoken_start: int
+    spoken_end: int
+    segment_ids: tuple[str, ...]
+    marker_ids: tuple[str, ...] = ()
+    content_hash: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "index": self.index,
+            "kind": self.kind,
+            "spoken_start": self.spoken_start,
+            "spoken_end": self.spoken_end,
+            "segment_ids": list(self.segment_ids),
+            "marker_ids": list(self.marker_ids),
+            "content_hash": self.content_hash,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class Diagnostic:
+    code: str
+    message: str
+    severity: str = "info"
+    path: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "code": self.code,
+            "message": self.message,
+            "severity": self.severity,
+            "path": self.path,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class TTSPlan:
+    source: PlanSource
+    config: Mapping[str, Any]
+    texts: PlanTexts
+    preparation: TextPreparationInfo
+    languages: tuple[LanguageRun, ...] = ()
+    annotations: tuple[AnnotationSpan, ...] = ()
+    boundaries: tuple[BoundaryEvent, ...] = ()
+    tokens: tuple[TokenAnnotation, ...] = ()
+    segments: tuple[PlanSegment, ...] = ()
+    units: tuple[PlanUnit, ...] = ()
+    markers: tuple[Marker, ...] = ()
+    document_metadata: Mapping[str, Any] = field(default_factory=dict)
+    warnings: tuple[str, ...] = ()
+    diagnostics: tuple[Diagnostic, ...] = ()
+    plan_id: str = ""
+    producer: Mapping[str, Any] = field(
+        default_factory=lambda: {"name": FORMAT, "version": __version__}
+    )
+    format: str = FORMAT
+    schema_version: int = SCHEMA_VERSION
+
+    def semantic_dict(self) -> dict[str, Any]:
+        data = self.to_dict()
+        for key in ("plan_id", "producer", "diagnostics", "warnings"):
+            data.pop(key, None)
+        return data
+
+    def with_identity(self) -> TTSPlan:
+        return (
+            self
+            if self.plan_id == semantic_hash(self.semantic_dict())
+            else _replace_plan(self, plan_id=semantic_hash(self.semantic_dict()))
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "format": self.format,
+            "schema_version": self.schema_version,
+            "producer": _plain(self.producer),
+            "plan_id": self.plan_id,
+            "source": self.source.to_dict(),
+            "config": _plain(self.config),
+            "texts": self.texts.to_dict(),
+            "preparation": self.preparation.to_dict(),
+            "languages": [_plain(x) for x in self.languages],
+            "annotations": [_plain(x) for x in self.annotations],
+            "boundaries": [_plain(x) for x in self.boundaries],
+            "tokens": [_plain(x) for x in self.tokens],
+            "segments": [_plain(x) for x in self.segments],
+            "units": [_plain(x) for x in self.units],
+            "markers": [_plain(x) for x in self.markers],
+            "document_metadata": _plain(self.document_metadata),
+            "warnings": list(self.warnings),
+            "diagnostics": [_plain(x) for x in self.diagnostics],
+        }
+
+    def to_json(self, *, indent: int | None = 2) -> str:
+        return (
+            __import__("json").dumps(
+                self.to_dict(), ensure_ascii=False, sort_keys=True, indent=indent, allow_nan=False
+            )
+            + "\n"
+        )
+
+    def save(self, path: str | Path) -> None:
+        Path(path).write_text(self.to_json(), encoding="utf-8")
+
+    @classmethod
+    def from_json(cls, value: str) -> TTSPlan:
+        import json
+
+        try:
+            data = json.loads(value)
+        except json.JSONDecodeError as exc:
+            raise PlanFormatError(str(exc), code="json.invalid") from exc
+        return cls.from_dict(data)
+
+    @classmethod
+    def load(cls, path: str | Path) -> TTSPlan:
+        return cls.from_json(Path(path).read_text(encoding="utf-8"))
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> TTSPlan:
+        _check_shape(data)
+        try:
+            plan = _from_dict(data)
+        except (KeyError, TypeError, ValueError, IndexError) as exc:
+            raise PlanFormatError(f"invalid plan value: {exc}", code="plan.value") from exc
+        plan.validate()
+        return plan
+
+    def validate(self) -> None:
+        validate_plan(self)
+
+
+def _replace_plan(plan: TTSPlan, **changes: Any) -> TTSPlan:
+    values = {field: getattr(plan, field) for field in plan.__dataclass_fields__}
+    values.update(changes)
+    return TTSPlan(**values)
+
+
+def _check_shape(data: Mapping[str, Any]) -> None:
+    if not isinstance(data, Mapping):
+        raise PlanFormatError("plan must be an object", code="json.type")
+    if data.get("format") != FORMAT:
+        raise PlanFormatError("format must be 'ttsplan'", code="format.invalid", path="$.format")
+    allowed = {
+        "format",
+        "schema_version",
+        "producer",
+        "plan_id",
+        "source",
+        "config",
+        "texts",
+        "preparation",
+        "languages",
+        "annotations",
+        "boundaries",
+        "tokens",
+        "segments",
+        "units",
+        "markers",
+        "document_metadata",
+        "warnings",
+        "diagnostics",
+    }
+    unknown = set(data) - allowed
+    if unknown:
+        raise PlanFormatError(f"unknown top-level fields: {sorted(unknown)}", code="field.unknown")
+    if data.get("schema_version") != SCHEMA_VERSION:
+        raise UnsupportedSchemaError(data.get("schema_version"))
+    for key in ("source", "config", "texts", "preparation", "segments", "units"):
+        if key not in data:
+            raise PlanFormatError(
+                f"required field {key!r} is missing", code="field.required", path=f"$.{key}"
+            )
+
+
+def _pause(data: Mapping[str, Any] | None) -> ResolvedPause:
+    data = data or {}
+    return ResolvedPause(float(data.get("seconds", 0.0)), tuple(data.get("events", ())))
+
+
+def _directive(data: Mapping[str, Any] | None) -> SegmentDirectives:
+    data = data or {}
+    voice = data.get("voice")
+    pronunciation = data.get("pronunciation")
+    prosody = data.get("prosody")
+    emphasis = data.get("emphasis")
+    audio = data.get("audio")
+    return SegmentDirectives(
+        VoiceDirective(str(voice["reference"])) if voice else None,
+        PronunciationDirective(
+            str(pronunciation["phonemes"]), str(pronunciation.get("alphabet", "ipa"))
+        )
+        if pronunciation
+        else None,
+        ProsodyDirective(prosody.get("rate"), prosody.get("pitch"), prosody.get("volume"))
+        if prosody
+        else None,
+        EmphasisDirective(str(emphasis["level"])) if emphasis else None,
+        AudioDirective(
+            str(audio["src"]), audio.get("alt_text"), audio.get("clip_begin"), audio.get("clip_end")
+        )
+        if audio
+        else None,
+    )
+
+
+def _from_dict(data: Mapping[str, Any]) -> TTSPlan:
+    source = data["source"]
+    texts = data["texts"]
+    prep = data["preparation"]
+    return TTSPlan(
+        source=PlanSource(str(source["format"]), str(source["text"])),
+        config=dict(data["config"]),
+        texts=PlanTexts(str(texts["structural"]), str(texts["spoken"])),
+        preparation=TextPreparationInfo(
+            str(prep.get("backend", "identity")),
+            prep.get("version"),
+            str(prep.get("source_text", texts["structural"])),
+            str(prep.get("spoken_text", texts["spoken"])),
+            tuple(prep.get("languages", ())),
+            tuple(prep.get("replacements", ())),
+            prep.get("offset_map"),
+            tuple(prep.get("warnings", ())),
+        ),
+        languages=tuple(
+            LanguageRun(
+                str(x["id"]),
+                int(x["spoken_start"]),
+                int(x["spoken_end"]),
+                str(x["language"]),
+                str(x.get("source", "document-default")),
+            )
+            for x in data.get("languages", ())
+        ),
+        annotations=tuple(
+            AnnotationSpan(
+                int(x.get("structural_start", x.get("char_start", 0))),
+                int(x.get("structural_end", x.get("char_end", 0))),
+                dict(x.get("attrs", {})),
+                str(x.get("kind", "annotation")),
+                x.get("id"),
+            )
+            for x in data.get("annotations", ())
+        ),
+        boundaries=tuple(
+            BoundaryEvent(
+                str(x["id"]),
+                int(x.get("position", x.get("pos", 0))),
+                str(x["kind"]),
+                x.get("seconds", x.get("duration_s")),
+                str(x.get("origin", "planner")),
+                x.get("strength"),
+                dict(x.get("attrs", {})),
+            )
+            for x in data.get("boundaries", ())
+        ),
+        tokens=tuple(
+            TokenAnnotation(
+                int(x["spoken_start"]),
+                int(x["spoken_end"]),
+                str(x.get("text", "")),
+                x.get("pos"),
+                x.get("tag"),
+                x.get("lemma"),
+                x.get("language"),
+                x.get("id"),
+            )
+            for x in data.get("tokens", ())
+        ),
+        segments=tuple(
+            PlanSegment(
+                str(x["id"]),
+                str(x["text"]),
+                int(x["spoken_start"]),
+                int(x["spoken_end"]),
+                str(x.get("language", "")),
+                int(x.get("paragraph", 0)),
+                int(x.get("sentence", 0)),
+                int(x.get("clause", 0)),
+                x.get("structural_start"),
+                x.get("structural_end"),
+                _pause(x.get("pause_before")),
+                _pause(x.get("pause_after")),
+                _directive(x.get("directives")),
+                tuple(x.get("token_indices", ())),
+                tuple(x.get("annotation_ids", ())),
+            )
+            for x in data.get("segments", ())
+        ),
+        units=tuple(
+            PlanUnit(
+                str(x["id"]),
+                int(x["index"]),
+                str(x["kind"]),
+                int(x["spoken_start"]),
+                int(x["spoken_end"]),
+                tuple(x.get("segment_ids", ())),
+                tuple(x.get("marker_ids", ())),
+                str(x.get("content_hash", "")),
+            )
+            for x in data.get("units", ())
+        ),
+        markers=tuple(
+            Marker(
+                str(x["id"]),
+                str(x["name"]),
+                int(x.get("spoken_position", x.get("position", 0))),
+                dict(x.get("attrs", {})),
+            )
+            for x in data.get("markers", ())
+        ),
+        document_metadata=dict(data.get("document_metadata", {})),
+        warnings=tuple(data.get("warnings", ())),
+        diagnostics=tuple(
+            Diagnostic(
+                str(x["code"]), str(x["message"]), str(x.get("severity", "info")), x.get("path")
+            )
+            for x in data.get("diagnostics", ())
+        ),
+        plan_id=str(data.get("plan_id", "")),
+        producer=dict(data.get("producer", {"name": FORMAT, "version": __version__})),
+        format=str(data["format"]),
+        schema_version=int(data["schema_version"]),
+    )
+
+
+def validate_plan(plan: TTSPlan) -> None:
+    text = plan.texts.spoken
+    if plan.source.format not in {"plain", "ssmd"}:
+        raise PlanValidationError("unsupported source format", code="source.format")
+    if plan.source.text is None:
+        raise PlanValidationError("source text is required", code="source.text")
+    if not plan.plan_id:
+        raise PlanValidationError("plan_id is required", code="plan_id.required")
+    ids: set[str] = set()
+    for collection, _name in (
+        (plan.languages, "language"),
+        (plan.annotations, "annotation"),
+        (plan.boundaries, "boundary"),
+        (plan.tokens, "token"),
+        (plan.segments, "segment"),
+        (plan.units, "unit"),
+        (plan.markers, "marker"),
+    ):
+        for item in collection:
+            item_id = getattr(item, "id", None)
+            if item_id is not None and item_id in ids:
+                raise PlanValidationError(f"duplicate id {item_id}", code="id.duplicate")
+            if item_id is not None:
+                ids.add(item_id)
+    previous = 0
+    boundary_ids = {event.id for event in plan.boundaries}
+    for segment in plan.segments:
+        if not (0 <= segment.spoken_start <= segment.spoken_end <= len(text)):
+            raise PlanValidationError(
+                "segment range is outside spoken text", code="segment.out_of_range"
+            )
+        if segment.text != text[segment.spoken_start : segment.spoken_end]:
+            raise PlanValidationError(
+                "segment text does not match spoken range", code="segment.range_mismatch"
+            )
+        if segment.spoken_start < previous:
+            raise PlanValidationError("segments are not sorted", code="segment.order")
+        previous = segment.spoken_end
+        for pause in (segment.pause_before, segment.pause_after):
+            if not math.isfinite(pause.seconds) or pause.seconds < 0:
+                raise PlanValidationError(
+                    "pause must be finite and non-negative", code="pause.invalid"
+                )
+            for event_id in pause.events:
+                if event_id not in boundary_ids:
+                    raise PlanValidationError(
+                        f"unknown boundary {event_id}", code="pause.unknown_boundary"
+                    )
+    for boundary in plan.boundaries:
+        if not (0 <= boundary.position <= len(text)):
+            raise PlanValidationError(
+                "boundary position is outside spoken text", code="boundary.out_of_range"
+            )
+        if boundary.seconds is not None and (
+            not math.isfinite(float(boundary.seconds)) or float(boundary.seconds) < 0
+        ):
+            raise PlanValidationError(
+                "boundary seconds must be finite and non-negative", code="boundary.seconds"
+            )
+    annotation_ids = {annotation.id for annotation in plan.annotations if annotation.id is not None}
+    for annotation in plan.annotations:
+        if not (0 <= annotation.structural_start <= annotation.structural_end <= len(text)):
+            raise PlanValidationError(
+                "annotation range is outside spoken text", code="annotation.out_of_range"
+            )
+    for run in plan.languages:
+        if not (0 <= run.spoken_start <= run.spoken_end <= len(text)):
+            raise PlanValidationError(
+                "language range is outside spoken text", code="language.out_of_range"
+            )
+    for token in plan.tokens:
+        if not (0 <= token.spoken_start <= token.spoken_end <= len(text)):
+            raise PlanValidationError(
+                "token range is outside spoken text", code="token.out_of_range"
+            )
+    segment_ids = {segment.id for segment in plan.segments}
+    token_count = len(plan.tokens)
+    for segment in plan.segments:
+        if any(index < 0 or index >= token_count for index in segment.token_indices):
+            raise PlanValidationError(
+                "segment references unknown token", code="segment.unknown_token"
+            )
+        if any(annotation_id not in annotation_ids for annotation_id in segment.annotation_ids):
+            raise PlanValidationError(
+                "segment references unknown annotation", code="segment.unknown_annotation"
+            )
+    marker_ids = {marker.id for marker in plan.markers}
+    for marker in plan.markers:
+        if not (0 <= marker.spoken_position <= len(text)):
+            raise PlanValidationError(
+                "marker position is outside spoken text", code="marker.out_of_range"
+            )
+    for unit in plan.units:
+        if not all(segment_id in segment_ids for segment_id in unit.segment_ids):
+            raise PlanValidationError(
+                "unit references unknown segment", code="unit.unknown_segment"
+            )
+        if not all(marker_id in marker_ids for marker_id in unit.marker_ids):
+            raise PlanValidationError("unit references unknown marker", code="unit.unknown_marker")
+        if not (0 <= unit.spoken_start <= unit.spoken_end <= len(text)):
+            raise PlanValidationError("unit range is outside spoken text", code="unit.out_of_range")
+        unit_segments = [segment for segment in plan.segments if segment.id in unit.segment_ids]
+        if unit.content_hash != semantic_hash(
+            unit_hash_payload(_HashUnit(unit_segments, unit.marker_ids))
+        ):
+            raise PlanValidationError(
+                "unit content hash does not match semantics", code="unit.hash_mismatch"
+            )
+        if unit_segments and (
+            unit.spoken_start > unit_segments[0].spoken_start
+            or unit.spoken_end < unit_segments[-1].spoken_end
+        ):
+            raise PlanValidationError("unit range does not contain its segments", code="unit.range")
+    if plan.plan_id != semantic_hash(plan.semantic_dict()):
+        raise PlanValidationError(
+            "plan_id does not match semantic contents", code="plan_id.mismatch"
+        )
+
+
+class _HashUnit:
+    def __init__(self, segments: list[PlanSegment], marker_ids: tuple[str, ...]) -> None:
+        self.segments = segments
+        self.marker_ids = marker_ids

@@ -1,0 +1,24 @@
+schema_version = 3
+
+[project]
+uuid = "c4a0577e-8faa-417b-b0da-259b21947378"
+name = "ttsplan"
+
+[ledgers.taskledger.mounts.data]
+storage = "external"
+root = "../ledger"
+
+[ledgers.taskledger.mounts.runtime]
+storage = "user-data"
+
+[ledgers.taskledger.mounts.logs]
+storage = "user-data"
+
+[ledgers.taskledger.mounts.indexes]
+storage = "cache"
+
+[ledgers.releaseledger.mounts.data]
+storage = "project"
+
+[ledgers.releaseledger.mounts.indexes]
+storage = "cache"

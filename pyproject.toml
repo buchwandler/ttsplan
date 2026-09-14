@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ttsplan"
+version = "0.1.0"
+description = "Engine-independent text-to-speech planning compiler and interchange format"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [{name = "Holger Nahrstaedt", email = "nahrstaedt@gmail.com"}]
+keywords = ["tts", "text-to-speech", "ssmd", "speech markup"]
+dependencies = [
+  "phrasplit>=0.3.8,<0.4",
+  "ssmd>=0.8.7,<0.9",
+  "spokenform>=0.3.6,<0.5",
+  "typing_extensions>=4.0",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Text Processing :: Linguistic",
+]
+
+[project.urls]
+Homepage = "https://github.com/buchwandler/ttsplan"
+Repository = "https://github.com/buchwandler/ttsplan"
+
+[project.scripts]
+ttsplan = "ttsplan.cli:main"
+
+[project.optional-dependencies]
+dev = ["build", "jsonschema", "mypy", "pytest", "ruff"]
+
+[tool.setuptools.packages.find]
+include = ["ttsplan*"]
+
+[tool.setuptools.package-data]
+ttsplan = ["py.typed", "ttsplan.schema.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["reference: requires the sibling PyKokoro checkout"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+check_untyped_defs = true
+ignore_missing_imports = true
+follow_imports = "skip"
+warn_unused_configs = true
+warn_return_any = false

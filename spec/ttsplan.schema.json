@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/buchwandler/ttsplan/blob/main/spec/ttsplan.schema.json",
+  "title": "TTSPlan schema",
+  "type": "object",
+  "required": [
+    "format",
+    "schema_version",
+    "producer",
+    "plan_id",
+    "source",
+    "config",
+    "texts",
+    "preparation",
+    "languages",
+    "annotations",
+    "boundaries",
+    "tokens",
+    "segments",
+    "units",
+    "markers",
+    "warnings",
+    "diagnostics"
+  ],
+  "properties": {
+    "format": { "const": "ttsplan" },
+    "schema_version": { "const": 1 },
+    "producer": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "plan_id": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "source": { "$ref": "#/$defs/source" },
+    "config": { "type": "object" },
+    "texts": {
+      "type": "object",
+      "required": ["structural", "spoken"],
+      "properties": {
+        "structural": { "type": "string" },
+        "spoken": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "preparation": { "$ref": "#/$defs/preparation" },
+    "languages": { "type": "array", "items": { "$ref": "#/$defs/language" } },
+    "annotations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/annotation" }
+    },
+    "boundaries": { "type": "array", "items": { "$ref": "#/$defs/boundary" } },
+    "tokens": { "type": "array", "items": { "$ref": "#/$defs/token" } },
+    "segments": { "type": "array", "items": { "$ref": "#/$defs/segment" } },
+    "units": { "type": "array", "items": { "$ref": "#/$defs/unit" } },
+    "markers": { "type": "array", "items": { "$ref": "#/$defs/marker" } },
+    "document_metadata": { "type": "object" },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "source": {
+      "type": "object",
+      "required": ["format", "text"],
+      "properties": {
+        "format": { "enum": ["plain", "ssmd"] },
+        "text": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "preparation": {
+      "type": "object",
+      "required": [
+        "backend",
+        "source_text",
+        "spoken_text",
+        "languages",
+        "replacements",
+        "warnings"
+      ],
+      "properties": {
+        "backend": { "type": "string" },
+        "version": { "type": ["string", "null"] },
+        "source_text": { "type": "string" },
+        "spoken_text": { "type": "string" },
+        "languages": { "type": "array", "items": { "type": "string" } },
+        "replacements": { "type": "array", "items": { "type": "object" } },
+        "offset_map": { "type": ["object", "null"] },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "range": { "type": "integer", "minimum": 0 },
+    "language": {
+      "type": "object",
+      "required": ["id", "spoken_start", "spoken_end", "language", "source"],
+      "properties": {
+        "id": { "type": "string" },
+        "spoken_start": { "$ref": "#/$defs/range" },
+        "spoken_end": { "$ref": "#/$defs/range" },
+        "language": { "type": "string" },
+        "source": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "annotation": {
+      "type": "object",
+      "required": ["structural_start", "structural_end", "kind", "attrs"],
+      "properties": {
+        "id": { "type": "string" },
+        "structural_start": { "$ref": "#/$defs/range" },
+        "structural_end": { "$ref": "#/$defs/range" },
+        "kind": { "type": "string" },
+        "attrs": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": ["id", "position", "kind", "seconds", "origin", "strength"],
+      "properties": {
+        "id": { "type": "string" },
+        "position": { "$ref": "#/$defs/range" },
+        "kind": { "type": "string" },
+        "seconds": { "type": ["number", "null"], "minimum": 0 },
+        "origin": { "type": "string" },
+        "strength": { "type": ["string", "null"] },
+        "attrs": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "token": {
+      "type": "object",
+      "required": [
+        "spoken_start",
+        "spoken_end",
+        "text",
+        "pos",
+        "tag",
+        "lemma",
+        "language"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "spoken_start": { "$ref": "#/$defs/range" },
+        "spoken_end": { "$ref": "#/$defs/range" },
+        "text": { "type": "string" },
+        "pos": { "type": ["string", "null"] },
+        "tag": { "type": ["string", "null"] },
+        "lemma": { "type": ["string", "null"] },
+        "language": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "pause": {
+      "type": "object",
+      "required": ["seconds", "events"],
+      "properties": {
+        "seconds": { "type": "number", "minimum": 0 },
+        "events": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "directives": {
+      "type": "object",
+      "properties": {
+        "voice": { "type": ["object", "null"] },
+        "pronunciation": { "type": ["object", "null"] },
+        "prosody": { "type": ["object", "null"] },
+        "emphasis": { "type": ["object", "null"] },
+        "audio": { "type": ["object", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "segment": {
+      "type": "object",
+      "required": [
+        "id",
+        "text",
+        "spoken_start",
+        "spoken_end",
+        "language",
+        "paragraph",
+        "sentence",
+        "clause",
+        "pause_before",
+        "pause_after",
+        "directives",
+        "token_indices",
+        "annotation_ids"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "spoken_start": { "$ref": "#/$defs/range" },
+        "spoken_end": { "$ref": "#/$defs/range" },
+        "language": { "type": "string" },
+        "paragraph": { "type": "integer", "minimum": 0 },
+        "sentence": { "type": "integer", "minimum": 0 },
+        "clause": { "type": "integer", "minimum": 0 },
+        "structural_start": { "type": ["integer", "null"], "minimum": 0 },
+        "structural_end": { "type": ["integer", "null"], "minimum": 0 },
+        "pause_before": { "$ref": "#/$defs/pause" },
+        "pause_after": { "$ref": "#/$defs/pause" },
+        "directives": { "$ref": "#/$defs/directives" },
+        "token_indices": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "annotation_ids": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "unit": {
+      "type": "object",
+      "required": [
+        "id",
+        "index",
+        "kind",
+        "spoken_start",
+        "spoken_end",
+        "segment_ids",
+        "marker_ids",
+        "content_hash"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "index": { "type": "integer", "minimum": 0 },
+        "kind": { "enum": ["paragraph", "sentence"] },
+        "spoken_start": { "$ref": "#/$defs/range" },
+        "spoken_end": { "$ref": "#/$defs/range" },
+        "segment_ids": { "type": "array", "items": { "type": "string" } },
+        "marker_ids": { "type": "array", "items": { "type": "string" } },
+        "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "marker": {
+      "type": "object",
+      "required": ["id", "name", "spoken_position"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "spoken_position": { "$ref": "#/$defs/range" },
+        "attrs": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["code", "message", "severity", "path"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "severity": { "type": "string" },
+        "path": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    }
+  }
+}

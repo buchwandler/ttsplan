@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ._version import __version__
+from .config import semantic_config
 from .exceptions import PlanFormatError, PlanValidationError, UnsupportedSchemaError
 from .hashing import semantic_hash, unit_hash_payload
 from .language import LanguageRun
@@ -71,30 +72,34 @@ class TextPreparationInfo:
 
 @dataclass(frozen=True, slots=True)
 class AnnotationSpan:
+    id: str
+    kind: str
+    attrs: Mapping[str, Any]
     structural_start: int
     structural_end: int
-    attrs: Mapping[str, Any] = field(default_factory=dict)
-    kind: str = "annotation"
-    id: str | None = None
+    spoken_start: int | None = None
+    spoken_end: int | None = None
 
     @property
     def char_start(self) -> int:
+        """Structural start retained as a documented compatibility alias."""
         return self.structural_start
 
     @property
     def char_end(self) -> int:
+        """Structural end retained as a documented compatibility alias."""
         return self.structural_end
 
     def to_dict(self) -> dict[str, Any]:
-        result: dict[str, Any] = {
-            "structural_start": self.structural_start,
-            "structural_end": self.structural_end,
+        return {
+            "id": self.id,
             "kind": self.kind,
             "attrs": _plain(self.attrs),
+            "structural_start": self.structural_start,
+            "structural_end": self.structural_end,
+            "spoken_start": self.spoken_start,
+            "spoken_end": self.spoken_end,
         }
-        if self.id is not None:
-            result["id"] = self.id
-        return result
 
 
 @dataclass(frozen=True, slots=True)
@@ -217,13 +222,21 @@ class AudioDirective:
     alt_text: str | None = None
     clip_begin: str | None = None
     clip_end: str | None = None
+    speed: str | None = None
+    repeat_duration: str | None = None
+    repeat_count: int | None = None
+    sound_level: str | None = None
 
-    def to_dict(self) -> dict[str, str | None]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "src": self.src,
             "alt_text": self.alt_text,
             "clip_begin": self.clip_begin,
             "clip_end": self.clip_end,
+            "speed": self.speed,
+            "repeat_duration": self.repeat_duration,
+            "repeat_count": self.repeat_count,
+            "sound_level": self.sound_level,
         }
 
 
@@ -389,6 +402,7 @@ class TTSPlan:
         data = self.to_dict()
         for key in ("plan_id", "producer", "diagnostics", "warnings"):
             data.pop(key, None)
+        data["config"] = semantic_config(data["config"])
         return data
 
     def with_identity(self) -> TTSPlan:
@@ -501,6 +515,73 @@ def _check_shape(data: Mapping[str, Any]) -> None:
                 f"required field {key!r} is missing", code="field.required", path=f"$.{key}"
             )
 
+    _check_nested_types(data)
+
+def _check_nested_types(data: Mapping[str, Any]) -> None:
+    _expect(data.get("producer"), Mapping, "$.producer")
+    _expect(data.get("source"), Mapping, "$.source")
+    _expect(data["source"].get("format"), str, "$.source.format")
+    _expect(data["source"].get("text"), str, "$.source.text")
+    _expect(data.get("config"), Mapping, "$.config")
+    texts = _expect(data.get("texts"), Mapping, "$.texts")
+    _expect(texts.get("structural"), str, "$.texts.structural")
+    _expect(texts.get("spoken"), str, "$.texts.spoken")
+    preparation = _expect(data.get("preparation"), Mapping, "$.preparation")
+    for key in ("backend", "source_text", "spoken_text"):
+        _expect(preparation.get(key), str, f"$.preparation.{key}")
+    for key in ("languages", "replacements", "warnings"):
+        _expect(preparation.get(key), list, f"$.preparation.{key}")
+    for key in ("languages", "annotations", "boundaries", "tokens", "segments", "units", "markers", "warnings", "diagnostics"):
+        _expect(data.get(key), list, f"$.{key}")
+    for index, item in enumerate(data["languages"]):
+        value = _expect(item, Mapping, f"$.languages[{index}]")
+        _expect(value.get("id"), str, f"$.languages[{index}].id")
+        _expect(value.get("spoken_start"), int, f"$.languages[{index}].spoken_start")
+        _expect(value.get("spoken_end"), int, f"$.languages[{index}].spoken_end")
+        _expect(value.get("language"), str, f"$.languages[{index}].language")
+    for index, item in enumerate(data["annotations"]):
+        value = _expect(item, Mapping, f"$.annotations[{index}]")
+        for key in ("id", "kind"):
+            _expect(value.get(key), str, f"$.annotations[{index}].{key}")
+        for key in ("structural_start", "structural_end"):
+            _expect(value.get(key), int, f"$.annotations[{index}].{key}")
+        for key in ("spoken_start", "spoken_end"):
+            if value.get(key) is not None:
+                _expect(value.get(key), int, f"$.annotations[{index}].{key}")
+        _expect(value.get("attrs"), Mapping, f"$.annotations[{index}].attrs")
+    for index, item in enumerate(data["segments"]):
+        value = _expect(item, Mapping, f"$.segments[{index}]")
+        _expect(value.get("text"), str, f"$.segments[{index}].text")
+        for key in ("spoken_start", "spoken_end"):
+            _expect(value.get(key), int, f"$.segments[{index}].{key}")
+        _expect(value.get("language"), str, f"$.segments[{index}].language")
+        for key in ("token_indices", "annotation_ids"):
+            _expect(value.get(key), list, f"$.segments[{index}].{key}")
+    for index, item in enumerate(data["units"]):
+        value = _expect(item, Mapping, f"$.units[{index}]")
+        for key in ("id", "kind", "content_hash"):
+            _expect(value.get(key), str, f"$.units[{index}].{key}")
+        _expect(value.get("segment_ids"), list, f"$.units[{index}].segment_ids")
+        _expect(value.get("marker_ids"), list, f"$.units[{index}].marker_ids")
+    for index, item in enumerate(data["markers"]):
+        value = _expect(item, Mapping, f"$.markers[{index}]")
+        for key in ("id", "name"):
+            _expect(value.get(key), str, f"$.markers[{index}].{key}")
+        _expect(value.get("spoken_position"), int, f"$.markers[{index}].spoken_position")
+    for index, item in enumerate(data["warnings"]):
+        _expect(item, str, f"$.warnings[{index}]")
+
+
+def _expect(value: Any, expected: type | tuple[type, ...], path: str) -> Any:
+    valid = type(value) is int if expected is int else isinstance(value, expected)
+    if not valid:
+        raise PlanFormatError(
+            f"expected {expected} at {path}", code="field.type", path=path
+        )
+    return value
+
+
+
 
 def _pause(data: Mapping[str, Any] | None) -> ResolvedPause:
     data = data or {}
@@ -526,11 +607,24 @@ def _directive(data: Mapping[str, Any] | None) -> SegmentDirectives:
         else None,
         EmphasisDirective(str(emphasis["level"])) if emphasis else None,
         AudioDirective(
-            str(audio["src"]), audio.get("alt_text"), audio.get("clip_begin"), audio.get("clip_end")
+            str(audio["src"]),
+            audio.get("alt_text"),
+            audio.get("clip_begin"),
+            audio.get("clip_end"),
+            audio.get("speed"),
+            audio.get("repeat_duration"),
+            audio.get("repeat_count"),
+            audio.get("sound_level"),
         )
         if audio
         else None,
     )
+def _optional_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    return int(value)
+
+
 
 
 def _from_dict(data: Mapping[str, Any]) -> TTSPlan:
@@ -563,13 +657,15 @@ def _from_dict(data: Mapping[str, Any]) -> TTSPlan:
         ),
         annotations=tuple(
             AnnotationSpan(
-                int(x.get("structural_start", x.get("char_start", 0))),
-                int(x.get("structural_end", x.get("char_end", 0))),
-                dict(x.get("attrs", {})),
-                str(x.get("kind", "annotation")),
-                x.get("id"),
+                id=str(x.get("id", f"annotation-{i:06d}")),
+                kind=str(x.get("kind", "annotation")),
+                attrs=dict(x.get("attrs", {})),
+                structural_start=int(x.get("structural_start", x.get("char_start", 0))),
+                structural_end=int(x.get("structural_end", x.get("char_end", 0))),
+                spoken_start=_optional_int(x.get("spoken_start")),
+                spoken_end=_optional_int(x.get("spoken_end")),
             )
-            for x in data.get("annotations", ())
+            for i, x in enumerate(data.get("annotations", ()))
         ),
         boundaries=tuple(
             BoundaryEvent(
@@ -712,11 +808,26 @@ def validate_plan(plan: TTSPlan) -> None:
             raise PlanValidationError(
                 "boundary seconds must be finite and non-negative", code="boundary.seconds"
             )
-    annotation_ids = {annotation.id for annotation in plan.annotations if annotation.id is not None}
+    annotation_ids = {annotation.id for annotation in plan.annotations}
     for annotation in plan.annotations:
-        if not (0 <= annotation.structural_start <= annotation.structural_end <= len(text)):
+        if not (0 <= annotation.structural_start <= annotation.structural_end <= len(plan.texts.structural)):
             raise PlanValidationError(
-                "annotation range is outside spoken text", code="annotation.out_of_range"
+                "annotation structural range is outside structural text",
+                code="annotation.structural_range",
+            )
+        if (annotation.spoken_start is None) != (annotation.spoken_end is None):
+            raise PlanValidationError(
+                "annotation spoken range must be both null or both present",
+                code="annotation.spoken_range",
+            )
+        spoken_start = annotation.spoken_start
+        spoken_end = annotation.spoken_end
+        if spoken_start is not None and spoken_end is not None and not (
+            0 <= spoken_start <= spoken_end <= len(text)
+        ):
+            raise PlanValidationError(
+                "annotation spoken range is outside spoken text",
+                code="annotation.spoken_range",
             )
     for run in plan.languages:
         if not (0 <= run.spoken_start <= run.spoken_end <= len(text)):
@@ -755,8 +866,9 @@ def validate_plan(plan: TTSPlan) -> None:
         if not (0 <= unit.spoken_start <= unit.spoken_end <= len(text)):
             raise PlanValidationError("unit range is outside spoken text", code="unit.out_of_range")
         unit_segments = [segment for segment in plan.segments if segment.id in unit.segment_ids]
+        marker_values = tuple(marker for marker in plan.markers if marker.id in unit.marker_ids)
         if unit.content_hash != semantic_hash(
-            unit_hash_payload(_HashUnit(unit_segments, unit.marker_ids))
+            unit_hash_payload(_HashUnit(unit_segments, unit.marker_ids, marker_values))
         ):
             raise PlanValidationError(
                 "unit content hash does not match semantics", code="unit.hash_mismatch"
@@ -766,6 +878,18 @@ def validate_plan(plan: TTSPlan) -> None:
             or unit.spoken_end < unit_segments[-1].spoken_end
         ):
             raise PlanValidationError("unit range does not contain its segments", code="unit.range")
+    flattened_segment_ids = [segment_id for unit in plan.units for segment_id in unit.segment_ids]
+    expected_segment_ids = [segment.id for segment in plan.segments]
+    if flattened_segment_ids != expected_segment_ids:
+        raise PlanValidationError(
+            "units must contain every segment exactly once in global order",
+            code="unit.segment_membership",
+        )
+    assigned_markers = [marker_id for unit in plan.units for marker_id in unit.marker_ids]
+    if len(assigned_markers) != len(set(assigned_markers)):
+        raise PlanValidationError(
+            "marker belongs to more than one unit", code="marker.unit_membership"
+        )
     if plan.plan_id != semantic_hash(plan.semantic_dict()):
         raise PlanValidationError(
             "plan_id does not match semantic contents", code="plan_id.mismatch"
@@ -773,6 +897,12 @@ def validate_plan(plan: TTSPlan) -> None:
 
 
 class _HashUnit:
-    def __init__(self, segments: list[PlanSegment], marker_ids: tuple[str, ...]) -> None:
+    def __init__(
+        self,
+        segments: list[PlanSegment],
+        marker_ids: tuple[str, ...],
+        marker_values: tuple[Marker, ...],
+    ) -> None:
         self.segments = segments
         self.marker_ids = marker_ids
+        self.marker_values = marker_values

@@ -81,12 +81,13 @@ def spans_from_annotations(annotations: Sequence[Any]) -> list[tuple[int, int, s
     for item in annotations:
         attrs = getattr(item, "attrs", {})
         language = attrs.get("lang") or attrs.get("language")
-        if language:
-            start = getattr(item, "char_start", None)
-            end = getattr(item, "char_end", None)
-            if start is None:
-                start = item.structural_start
-            if end is None:
-                end = item.structural_end
+        if not language or str(attrs.get("scope", "")).lower() in {"pronunciation", "phoneme"}:
+            continue
+        start = getattr(item, "spoken_start", None)
+        end = getattr(item, "spoken_end", None)
+        if start is None or end is None:
+            start = getattr(item, "structural_start", None)
+            end = getattr(item, "structural_end", None)
+        if start is not None and end is not None:
             result.append((int(start), int(end), str(language), "explicit-span"))
     return result

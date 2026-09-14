@@ -13,6 +13,8 @@ def resolve_pauses(
     events_after: dict[int, list[BoundaryEvent]] = defaultdict(list)
     events_before: dict[int, list[BoundaryEvent]] = defaultdict(list)
     for event in boundaries:
+        if event.attrs.get("automatic") and config.mode != "auto" and event.kind in {"clausal_comma", "parenthetical", "voice_change"}:
+            continue
         duration = event.seconds
         if duration is None:
             duration = {

@@ -1,9 +1,36 @@
 {
-  "annotations": [],
+  "annotations": [
+    {
+      "attrs": {
+        "lang": "en-us"
+      },
+      "id": "annotation-000000",
+      "kind": "language",
+      "spoken_end": 4,
+      "spoken_start": 0,
+      "structural_end": 4,
+      "structural_start": 0
+    },
+    {
+      "attrs": {
+        "emphasis": "strong",
+        "pitch": "+2st",
+        "rate": "1.2",
+        "tag": "prosody",
+        "volume": "80%"
+      },
+      "id": "annotation-000001",
+      "kind": "inline",
+      "spoken_end": 4,
+      "spoken_start": 0,
+      "structural_end": 4,
+      "structural_start": 0
+    }
+  ],
   "boundaries": [],
   "config": {
     "diagnostics": true,
-    "document_format": "plain",
+    "document_format": "ssmd",
     "language": "en-us",
     "language_aliases": {},
     "linguistics": {
@@ -39,6 +66,7 @@
     }
   ],
   "document_metadata": {
+    "header": {},
     "planning": {
       "engine_independent": true,
       "linguistic_passes": 2,
@@ -50,13 +78,13 @@
     {
       "id": "lang-0",
       "language": "en-us",
-      "source": "document-default",
-      "spoken_end": 6,
+      "source": "explicit-span",
+      "spoken_end": 4,
       "spoken_start": 0
     }
   ],
   "markers": [],
-  "plan_id": "sha256:024bb7967373649ab7d975ad6b0e145b190688ecfd0d40cf02029cbfbfadda62",
+  "plan_id": "sha256:5c09bcf9d41cfb42c772f610c4937f1080c4b8911fc7837bae81b98f01c80284",
   "preparation": {
     "backend": "spokenform",
     "languages": [
@@ -69,43 +97,35 @@
         1,
         2,
         3,
-        4,
-        5,
-        6
+        4
       ],
-      "output_length": 6,
+      "output_length": 4,
       "output_right": [
         0,
         1,
         2,
         3,
-        4,
-        5,
-        6
+        4
       ],
       "source_left": [
         0,
         1,
         2,
         3,
-        4,
-        5,
-        6
+        4
       ],
-      "source_length": 6,
+      "source_length": 4,
       "source_right": [
         0,
         1,
         2,
         3,
-        4,
-        5,
-        6
+        4
       ]
     },
     "replacements": [],
-    "source_text": "Hello.",
-    "spoken_text": "Hello.",
+    "source_text": "fast",
+    "spoken_text": "fast",
     "version": "0.4.2",
     "warnings": []
   },
@@ -116,13 +136,22 @@
   "schema_version": 1,
   "segments": [
     {
-      "annotation_ids": [],
+      "annotation_ids": [
+        "annotation-000000",
+        "annotation-000001"
+      ],
       "clause": 0,
       "directives": {
         "audio": null,
-        "emphasis": null,
+        "emphasis": {
+          "level": "strong"
+        },
         "pronunciation": null,
-        "prosody": null,
+        "prosody": {
+          "pitch": "+2st",
+          "rate": "1.2",
+          "volume": "80%"
+        },
         "voice": null
       },
       "id": "seg-000000",
@@ -137,39 +166,39 @@
         "seconds": 0.0
       },
       "sentence": 0,
-      "spoken_end": 6,
+      "spoken_end": 4,
       "spoken_start": 0,
       "structural_end": null,
       "structural_start": null,
-      "text": "Hello.",
+      "text": "fast",
       "token_indices": [
         0
       ]
     }
   ],
   "source": {
-    "format": "plain",
-    "text": "Hello."
+    "format": "ssmd",
+    "text": "[fast]{rate=\"1.2\" pitch=\"+2st\" volume=\"80%\" emphasis=\"strong\"}"
   },
   "texts": {
-    "spoken": "Hello.",
-    "structural": "Hello."
+    "spoken": "fast",
+    "structural": "fast"
   },
   "tokens": [
     {
       "id": "token-0",
       "language": "en-us",
-      "lemma": "hello.",
+      "lemma": "fast",
       "pos": null,
-      "spoken_end": 6,
+      "spoken_end": 4,
       "spoken_start": 0,
       "tag": null,
-      "text": "Hello."
+      "text": "fast"
     }
   ],
   "units": [
     {
-      "content_hash": "sha256:81f9975d92cfadf21fd0857053f1d468e8c294813a19e718d2a2eb6696142f57",
+      "content_hash": "sha256:4cb610b1c3c42a165a345f93d79c49157990f15e7316f9ec7c67feac97fed548",
       "id": "unit-0000",
       "index": 0,
       "kind": "paragraph",
@@ -177,7 +206,7 @@
       "segment_ids": [
         "seg-000000"
       ],
-      "spoken_end": 6,
+      "spoken_end": 4,
       "spoken_start": 0
     }
   ],

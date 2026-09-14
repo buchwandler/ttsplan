@@ -43,3 +43,14 @@ class PlannerConfig:
     overlap_mode: Literal["snap", "strict"] = "snap"
     language_aliases: Mapping[str, str] = field(default_factory=dict)
     diagnostics: bool = True
+
+def semantic_config(config: PlannerConfig | Mapping[str, object]) -> dict[str, object]:
+    """Return only configuration fields that can change the planning result."""
+    if isinstance(config, PlannerConfig):
+        from dataclasses import asdict
+
+        value = asdict(config)
+    else:
+        value = dict(config)
+    value.pop("diagnostics", None)
+    return value

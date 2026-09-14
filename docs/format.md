@@ -9,3 +9,9 @@ The top-level semantic categories are source, config, texts, preparation, langua
 Pauses contain both resolved seconds and contributing boundary IDs. Boundary records preserve kind, origin, strength, and position so a plan can answer why a renderer should pause. Directives are typed semantic requests for voice, pronunciation, prosody, emphasis, and external audio metadata.
 
 Readers reject unsupported schema versions rather than guessing. Unknown top-level semantic fields are not accepted by the v1 schema. Extensions belong in documented metadata dictionaries.
+
+## Coordinate and provenance rules
+
+Annotations retain `structural_start` and `structural_end` in `texts.structural` plus nullable `spoken_start` and `spoken_end` in `texts.spoken`. Preparation stores the dependency offset map and replacements. Boundary and marker positions are always spoken coordinates; segment ranges and renderer-facing annotation applicability are also spoken coordinates.
+
+The planner validates nested JSON shapes before constructing objects. It rejects malformed field types instead of coercing values, and validates range, ordering, reference, unit membership, hash, and plan identity invariants.

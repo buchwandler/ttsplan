@@ -16,6 +16,17 @@ def semantic_hash(value: Any) -> str:
 
 
 def unit_hash_payload(unit: Any) -> dict[str, Any]:
+    marker_values: Any = getattr(unit, "marker_values", None)
+    if marker_values is None:
+        marker_values = getattr(unit, "marker_ids", ())
+    markers = []
+    for marker in marker_values:
+        if hasattr(marker, "to_dict"):
+            value = marker.to_dict()
+            value.pop("id", None)
+            markers.append(value)
+        else:
+            markers.append(marker)
     return {
         "hash_schema": "ttsplan-unit-v1",
         "segments": [
@@ -28,10 +39,5 @@ def unit_hash_payload(unit: Any) -> dict[str, Any]:
             }
             for segment in unit.segments
         ],
-        "markers": list(unit.marker_ids),
-        "boundaries": [
-            boundary.to_dict()
-            for segment in unit.segments
-            for boundary in (segment.pause_before, segment.pause_after)
-        ],
+        "markers": markers,
     }

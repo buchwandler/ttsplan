@@ -112,11 +112,13 @@
     },
     "annotation": {
       "type": "object",
-      "required": ["structural_start", "structural_end", "kind", "attrs"],
+      "required": ["id", "structural_start", "structural_end", "spoken_start", "spoken_end", "kind", "attrs"],
       "properties": {
         "id": { "type": "string" },
         "structural_start": { "$ref": "#/$defs/range" },
         "structural_end": { "$ref": "#/$defs/range" },
+        "spoken_start": { "type": ["integer", "null"], "minimum": 0 },
+        "spoken_end": { "type": ["integer", "null"], "minimum": 0 },
         "kind": { "type": "string" },
         "attrs": { "type": "object" }
       },

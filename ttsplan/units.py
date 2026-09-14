@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from collections.abc import Iterable
 from dataclasses import replace
 
 from .hashing import semantic_hash, unit_hash_payload
@@ -11,28 +9,74 @@ from .model import Marker, PlanSegment, PlanUnit
 def make_units(
     segments: tuple[PlanSegment, ...], markers: tuple[Marker, ...], kind: str
 ) -> tuple[PlanUnit, ...]:
-    groups: dict[tuple[int, int], list[PlanSegment]] = defaultdict(list)
+    if not segments:
+        return ()
+    groups: list[list[PlanSegment]] = []
+    current: list[PlanSegment] = []
+    current_key: tuple[int, int] | None = None
+    closed: set[tuple[int, int]] = set()
     for segment in segments:
-        groups[(segment.paragraph, segment.sentence if kind == "sentence" else -1)].append(segment)
-    units = []
-    for index, ((_paragraph, _sentence), group) in enumerate(sorted(groups.items())):
+        key = (segment.paragraph, segment.sentence if kind == "sentence" else -1)
+        if current and key != current_key:
+            groups.append(current)
+            if current_key is not None:
+                closed.add(current_key)
+            current = []
+        if key in closed:
+            raise ValueError(f"non-contiguous unit key {key}")
+        current.append(segment)
+        current_key = key
+    if current:
+        groups.append(current)
+
+    units: list[PlanUnit] = []
+    for index, group in enumerate(groups):
         start, end = group[0].spoken_start, group[-1].spoken_end
         marker_ids = tuple(
-            marker.id for marker in markers if start <= marker.spoken_position <= end
+            marker.id
+            for marker in markers
+            if _marker_belongs(marker.spoken_position, groups, index)
+        )
+        marker_values = tuple(
+            marker for marker in markers if marker.id in marker_ids
         )
         provisional = PlanUnit(
-            f"unit-{index:04d}", index, kind, start, end, tuple(x.id for x in group), marker_ids
+            f"unit-{index:04d}",
+            index,
+            kind,
+            start,
+            end,
+            tuple(segment.id for segment in group),
+            marker_ids,
         )
         units.append(
             replace(
                 provisional,
-                content_hash=semantic_hash(unit_hash_payload(_UnitView(group, marker_ids))),
+                content_hash=semantic_hash(unit_hash_payload(_UnitView(group, marker_ids, marker_values))),
             )
         )
     return tuple(units)
+def _marker_belongs(
+    position: int, groups: list[list[PlanSegment]], index: int
+ ) -> bool:
+    group = groups[index]
+    start = group[0].spoken_start
+    end = group[-1].spoken_end
+    if index < len(groups) - 1 and end <= position <= groups[index + 1][0].spoken_start:
+        return False
+    if index > 0 and groups[index - 1][-1].spoken_end <= position <= start:
+        return True
+    return start <= position < end or (index == len(groups) - 1 and position == end)
+
 
 
 class _UnitView:
-    def __init__(self, segments: Iterable[PlanSegment], marker_ids: tuple[str, ...]):
+    def __init__(
+        self,
+        segments: list[PlanSegment],
+        marker_ids: tuple[str, ...],
+        marker_values: tuple[Marker, ...],
+    ) -> None:
         self.segments = tuple(segments)
         self.marker_ids = marker_ids
+        self.marker_values = marker_values

@@ -1,21 +1,54 @@
-# PyKokoro reference
+# PyKokoro reference evidence
 
-The sibling `../pykokoro` checkout is a read-only migration oracle. Phase A production code never imports it. Reference tests, when enabled, run the sibling in a subprocess and compare normalized engine-neutral semantics only.
+The sibling `../pykokoro` checkout is a read-only migration oracle. The normal
+TTSPlan package never imports it. The optional reference test invokes the
+frontend helper in a subprocess and compares normalized, engine-neutral
+semantics.
 
-Repository: `../pykokoro`
-Reference version: `0.9.6.dev1+g21bcf5590`
-Reference commit: `50802ee9a70cd3eea7f2609858255dd39d3adf92`
+## Tested snapshot
+
+The current parity run used:
+
+- PyKokoro version: `0.9.8`
+- PyKokoro commit: `cc4271515011cbbe8843fc3673393063044c22e9`
+- `phrasplit`: `0.3.9`
+- `spokenform`: `0.4.4.dev0+g71feb9cb4.d19800101`
+- `ssmd`: `0.8.7`
+
+The corpus includes abbreviations, units and numbers, multilingual spans,
+parentheticals, multiple paragraphs, explicit breaks, markers, pronunciation
+annotations, quoted sentence boundaries, punctuation, Unicode, and empty
+input. The helper reports the version, revision, and dependency versions with
+each run so the evidence can be refreshed without hard-coded test counts.
 
 ## Comparison policy
 
-The subprocess helper `tests/reference/dump_pykokoro_frontend.py` runs `prepare_frontend()` with spaCy disabled and emits normalized structural text, spoken text, preparation replacements and warnings, annotations, boundaries, and segments. TTSPlan compares spoken text and non-whitespace segment content exactly. PyKokoro whitespace-only split records are omitted from the normalized comparison.
+The helper emits normalized structural text, spoken text, preparation records,
+annotations, boundaries, and frontend segments. The parity test requires exact
+spoken text and compares non-whitespace segment content. It compares language
+and paragraph ownership when segment counts align, normalizing language tags
+such as `fr` and `fr-fr` to their base language. Provider-specific segment
+splits and whitespace-only records are normalized away.
 
-| Behavior                 | PyKokoro representation                   | TTSPlan representation                                               | Equivalent? | Reason                                        | Regression test                           |
-| ------------------------ | ----------------------------------------- | -------------------------------------------------------------------- | ----------- | --------------------------------------------- | ----------------------------------------- |
-| Offset mapping           | Provider `OffsetMap`                      | Serialized structural-to-spoken map with dual annotation coordinates | Yes         | Same source and output ranges are compared    | `tests/test_coordinates.py`               |
-| Pause resolution         | Runtime boundary handling                 | Typed `ResolvedPause` with contributing event IDs                    | Yes         | Renderer-neutral duration is retained earlier | `tests/test_pauses.py`                    |
-| Voice binding            | Provider voice name may be resolved later | Logical voice reference plus document bindings                       | Yes         | Provider voice resolution is out of scope     | `tests/test_planner.py`                   |
-| Provider documents       | Request-local spaCy documents             | Released before plan construction                                    | Yes         | Public plan remains JSON-compatible           | `tests/test_linguistics.py`               |
-| Whitespace-only segments | Split records can contain whitespace      | Empty/whitespace records are omitted                                 | Yes         | No synthesized speech content is lost         | `tests/reference/test_pykokoro_parity.py` |
+Annotation counts are compared after normalizing provider-specific annotation
+kind names. Typed TTSPlan directives, resolved pauses, marker ownership, and
+unit records remain TTSPlan-native consumer contract behavior.
 
-Phonemes, model token IDs, audio, ONNX runtime, embeddings, timestamps, and acoustic short-sentence handling are intentionally outside frontend parity.
+| Behavior                      | PyKokoro representation        | TTSPlan representation                   | Policy                                                 |
+| ----------------------------- | ------------------------------ | ---------------------------------------- | ------------------------------------------------------ |
+| Written-to-spoken preparation | Provider preparation object    | `TextPreparationInfo` and `texts.spoken` | Compare spoken text and normalized replacements        |
+| Segment text                  | Provider frontend segments     | `PlanSegment.text`                       | Compare non-whitespace content                         |
+| Language                      | Provider language metadata     | `PlanSegment.language`                   | Compare base language when aligned                     |
+| Coordinates                   | Provider offsets               | Spoken and structural documented ranges  | Compare normalized content and validate TTSPlan ranges |
+| Pauses                        | Provider boundary handling     | `ResolvedPause` plus `BoundaryEvent`     | Keep deterministic TTSPlan semantics                   |
+| Provider documents            | Request-local frontend objects | Released before plan construction        | Do not retain provider objects                         |
+| Phonemes and audio            | Renderer-specific              | Not present                              | Out of scope                                           |
+
+Run the optional suite with:
+
+```bash
+pytest -q -m reference
+```
+
+A missing sibling checkout skips the reference test. Native tests must remain
+usable without PyKokoro.

@@ -5,24 +5,84 @@ import sys
 from pathlib import Path
 from typing import Literal, cast
 
-from . import PlannerConfig, TTSPlan, TTSPlanner
+from . import PlannerConfig, TTSPlan, TTSPlanner, __version__
+from .config import LinguisticsConfig, PauseConfig
 from .exceptions import TTSPlanError
+
+InputFormat = Literal["plain", "ssmd"]
+
+
+_EXAMPLES = """examples:
+  ttsplan compile "Hello world." --lang en-us
+  echo "Hello world." | ttsplan compile --lang en-us | jq .
+  ttsplan compile chapter.ssmd --lang en-us -o chapter.ttsplan.json
+  ttsplan validate chapter.ttsplan.json
+  ttsplan inspect chapter.ttsplan.json --segment 0
+"""
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="ttsplan", description="Compile text into an engine-independent TTS plan"
+        prog="ttsplan",
+        description="Compile text or SSMD into deterministic, engine-independent TTS plans.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=_EXAMPLES,
     )
+    parser.add_argument("--version", action="version", version=f"ttsplan {__version__}")
     commands = parser.add_subparsers(dest="command", required=True)
-    compile_parser = commands.add_parser("compile", help="compile text or SSMD")
-    compile_parser.add_argument("input", type=Path)
-    compile_parser.add_argument("--language", required=True)
-    compile_parser.add_argument("--format", choices=("plain", "ssmd"))
+
+    compile_parser = commands.add_parser(
+        "compile",
+        help="compile literal text, stdin, or a file into a TTS plan",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=_EXAMPLES,
+    )
+    compile_parser.add_argument(
+        "text",
+        nargs="*",
+        help="literal text, or one existing file path; omit to read stdin",
+    )
+    compile_parser.add_argument(
+        "--file",
+        type=Path,
+        help="read UTF-8 text from this file (cannot be combined with positional text)",
+    )
+    compile_parser.add_argument("--language", "--lang", required=True, dest="language")
+    compile_parser.add_argument(
+        "--input-format",
+        "--format",
+        dest="input_format",
+        choices=("auto", "text", "ssmd"),
+        default="auto",
+        help="input interpretation; auto infers SSMD from a .ssmd file suffix",
+    )
     compile_parser.add_argument("--unit", choices=("paragraph", "sentence"), default="paragraph")
-    compile_parser.add_argument("--output", "-o", required=True, type=Path)
-    validate_parser = commands.add_parser("validate", help="validate a plan file")
+    compile_parser.add_argument(
+        "--text-preparation",
+        choices=("spokenform", "identity"),
+        default="spokenform",
+    )
+    compile_parser.add_argument("--pause-mode", choices=("tts", "manual", "auto"), default="tts")
+    compile_parser.add_argument(
+        "--spacy",
+        choices=("auto", "off", "sm", "md", "lg", "trf"),
+        default="off",
+        help="linguistic-resource policy; default is the deterministic fallback",
+    )
+    compile_parser.add_argument("-o", "--output", type=Path, help="write the plan to this file")
+    compile_parser.add_argument(
+        "--force", action="store_true", help="replace an existing output file"
+    )
+    compile_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="also print the complete plan JSON when --output is used",
+    )
+
+    validate_parser = commands.add_parser("validate", help="validate a saved TTS plan")
     validate_parser.add_argument("input", type=Path)
-    inspect_parser = commands.add_parser("inspect", help="inspect a plan file")
+
+    inspect_parser = commands.add_parser("inspect", help="inspect a saved TTS plan")
     inspect_parser.add_argument("input", type=Path)
     inspect_parser.add_argument("--unit", type=int)
     inspect_parser.add_argument("--segment", type=int)
@@ -32,22 +92,101 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _format_for_path(path: Path) -> InputFormat:
+    return "ssmd" if path.suffix.lower() == ".ssmd" else "plain"
+
+
+def _read_compile_input(args: argparse.Namespace) -> tuple[str, InputFormat]:
+    if args.file is not None:
+        if args.text:
+            raise ValueError("--file cannot be combined with positional text")
+        source = args.file.read_text(encoding="utf-8")
+        input_format = (
+            _format_for_path(args.file)
+            if args.input_format == "auto"
+            else _map_input_format(args.input_format)
+        )
+        return source, input_format
+
+    if not args.text:
+        if sys.stdin.isatty():
+            raise ValueError("no input text supplied; provide text or pipe data on stdin")
+        source = sys.stdin.read()
+        if not source.strip():
+            raise ValueError("stdin is empty; provide meaningful input text")
+        return source, _map_input_format(args.input_format, default="plain")
+
+    if args.input_format == "text":
+        return " ".join(args.text), "plain"
+
+    if len(args.text) == 1:
+        candidate = Path(args.text[0])
+        if candidate.is_file():
+            source = candidate.read_text(encoding="utf-8")
+            input_format = (
+                _format_for_path(candidate)
+                if args.input_format == "auto"
+                else _map_input_format(args.input_format)
+            )
+            return source, input_format
+
+    return " ".join(args.text), _map_input_format(args.input_format, default="plain")
+
+
+def _map_input_format(value: str, *, default: InputFormat = "plain") -> InputFormat:
+    if value == "text":
+        return "plain"
+    if value == "ssmd":
+        return "ssmd"
+    return default
+
+
+def _linguistics_config(policy: str) -> LinguisticsConfig:
+    if policy == "off":
+        return LinguisticsConfig(use_spacy=False)
+    if policy == "auto":
+        return LinguisticsConfig(use_spacy=True)
+    return LinguisticsConfig(
+        use_spacy=True,
+        spacy_model_size=cast(Literal["sm", "md", "lg", "trf"], policy),
+        require_spacy=True,
+    )
+
+
+def _compile(args: argparse.Namespace) -> int:
+    source, input_format = _read_compile_input(args)
+    if args.output is not None and args.output.exists() and not args.force:
+        raise ValueError(f"output exists: {args.output}; use --force to replace it")
+
+    config = PlannerConfig(
+        language=args.language,
+        document_format=input_format,
+        text_preparation=args.text_preparation,
+        unit=args.unit,
+        pauses=PauseConfig(mode=args.pause_mode),
+        linguistics=_linguistics_config(args.spacy),
+    )
+    plan = TTSPlanner(config).plan(source)
+    payload = plan.to_json()
+    if args.output is None:
+        print(payload, end="")
+    else:
+        args.output.write_text(payload, encoding="utf-8")
+        if args.json:
+            print(payload, end="")
+        else:
+            print(
+                f"wrote {args.output} ({len(plan.segments)} segments, {len(plan.units)} units)",
+                file=sys.stderr,
+            )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         if args.command == "compile":
-            source = args.input.read_text(encoding="utf-8")
-            format_name = cast(
-                Literal["plain", "ssmd"],
-                args.format
-                or ("ssmd" if args.input.suffix.lower() in {".ssmd", ".ssml"} else "plain"),
-            )
-            plan = TTSPlanner(
-                PlannerConfig(language=args.language, document_format=format_name, unit=args.unit)
-            ).plan(source)
-            plan.save(args.output)
-            print(f"wrote {args.output} ({len(plan.segments)} segments, {len(plan.units)} units)")
-            return 0
+            return _compile(args)
         plan = TTSPlan.load(args.input)
         if args.command == "validate":
             print("valid")
@@ -84,7 +223,8 @@ def _inspect(plan: TTSPlan, args: argparse.Namespace) -> None:
         print("\nBoundaries")
         for boundary in plan.boundaries:
             print(
-                f"  {boundary.id}: {boundary.kind} at {boundary.position}, {boundary.seconds}s, {boundary.origin}"
+                f"  {boundary.id}: {boundary.kind} at {boundary.position}, "
+                f"{boundary.seconds}s, {boundary.origin}"
             )
     if args.tokens:
         print("\nTokens")

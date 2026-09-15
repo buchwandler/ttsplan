@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.metadata
 import json
 import subprocess
 import sys
@@ -25,6 +26,16 @@ def _revision() -> str:
         ).strip()
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
+
+
+def _versions() -> dict[str, str]:
+    versions: dict[str, str] = {}
+    for name in ("phrasplit", "spokenform", "ssmd"):
+        try:
+            versions[name] = importlib.metadata.version(name)
+        except importlib.metadata.PackageNotFoundError:
+            versions[name] = "unknown"
+    return versions
 
 
 def _value(item: object, *names: str, default: object = None) -> object:
@@ -102,10 +113,11 @@ def main() -> None:
         values = json.loads(raw)
         cases = values if isinstance(values, list) else [str(values)]
     else:
-        cases = ["Doctor Smith bought 5 kg.", "Hello ...s world", 'Hello [Bonjour]{lang="fr"}.']
+        cases = ["Doctor Smith bought 5 kg.", "Hello ...s world"]
     output = {
         "reference": getattr(pykokoro, "__version__", "unknown"),
         "commit": _revision(),
+        "dependency_versions": _versions(),
         "cases": [{"input": text, "frontend": normalize(str(text))} for text in cases],
     }
     print(json.dumps(output, ensure_ascii=False, sort_keys=True))

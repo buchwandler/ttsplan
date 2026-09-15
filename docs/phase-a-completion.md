@@ -1,32 +1,46 @@
-# Phase A completion report
+# Phase A completion and release evidence
 
 ## Scope
 
-TTSPlan is a standalone, engine-independent planning compiler ending before G2P and synthesis. `../pykokoro` was used only as a read-only reference checkout. PyKokoro integration and Phase B remain out of scope.
+TTSPlan is a standalone, engine-independent planning compiler ending before
+G2P and synthesis. `../pykokoro` is a read-only parity reference. This
+repository does not modify PyKokoro and does not add renderer, G2P, ONNX, or
+audio dependencies.
 
-## Recorded result
+## Current release contract
 
-- TTSPlan version: `0.1.0`
-- Schema version: `1`
-- PyKokoro reference version: `0.9.6.dev1+g21bcf5590`
-- PyKokoro reference commit: `50802ee9a70cd3eea7f2609858255dd39d3adf92`
-- Native test cases: `34` passed with `pytest -m "not reference"`
-- Reference test cases: `1` passed with `pytest -m reference`
-- Representative golden plans: `7` plus the existing baseline
-- Intentional differences: whitespace-only reference split records are normalized away; typed TTSPlan directives and resolved pause records replace provider-specific runtime objects; provider documents are released before plan construction.
-- Schema changes: annotation records now require dual structural/spoken coordinates; source and packaged schemas are synchronized.
-- PyKokoro modification: none. `git -C ../pykokoro status --short` was clean during completion.
+- Target package release: `0.1.0`
+- TTSPlan schema version: `1`
+- PyKokoro parity target: `0.9.8`
+- PyKokoro parity commit: `cc4271515011cbbe8843fc3673393063044c22e9`
+- Tested migration floors: `phrasplit>=0.3.9,<0.4` and
+  `spokenform>=0.4.3,<0.5`
 
-## Release gate evidence
+Package and schema versions are independent. Test totals and parity corpus
+sizes are intentionally not recorded as fixed status claims because they
+change with the source tree. Use the release commands below for current
+results.
 
-Native behavior is covered by coordinate, preparation, linguistic, boundary, pause, directive, marker, unit, schema, identity, and golden-plan tests. The reference helper runs PyKokoro in a subprocess and records its revision. Normal TTSPlan imports remain independent of PyKokoro, G2P, ONNX Runtime, and audio packages.
-
-Before release, run:
+## Verification commands
 
 ```bash
-pytest -m "not reference"
-pytest -m reference
+python -m pytest -q -m 'not reference'
+pytest -q -m reference
 ruff check .
 mypy ttsplan
 python -m build
+sphinx-build -W --keep-going -b html docs docs/_build/html
 ```
+
+The reference test is optional and runs PyKokoro in a subprocess. It reports
+its tested version, commit, and dependency versions. Native TTSPlan tests must
+pass without the sibling checkout.
+
+## Architectural evidence
+
+The native suite covers parsing, language planning, preparation, spoken and
+structural coordinates, boundaries, pauses, directives, markers, units, schema
+validation, deterministic identity, package metadata, import boundaries, and
+the public renderer-consumer contract. Plans retain only JSON-compatible
+semantic state. Provider documents and runtime sessions are released before a
+completed plan is returned.

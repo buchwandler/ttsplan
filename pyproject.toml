@@ -12,11 +12,11 @@ license = {file = "LICENSE"}
 authors = [{name = "Holger Nahrstaedt", email = "nahrstaedt@gmail.com"}]
 keywords = ["tts", "text-to-speech", "ssmd", "speech markup"]
 dependencies = [
-  "phrasplit>=0.3.8,<0.4",
+  "phrasplit>=0.3.9,<0.4",
   "ssmd>=0.8.7,<0.9",
-  "spokenform>=0.3.6,<0.5",
+  "spokenform>=0.4.3,<0.5",
   "typing_extensions>=4.0",
-]
+ ]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "License :: OSI Approved :: Apache Software License",
@@ -25,8 +25,9 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
   "Topic :: Text Processing :: Linguistic",
-]
+ ]
 
 [project.urls]
 Homepage = "https://github.com/buchwandler/ttsplan"
@@ -37,7 +38,7 @@ ttsplan = "ttsplan.cli:main"
 
 [project.optional-dependencies]
 dev = ["build", "jsonschema", "mypy", "pytest", "ruff"]
-
+docs = ["sphinx>=7.0", "sphinx-rtd-theme>=2.0", "myst-parser>=2.0"]
 [tool.setuptools.packages.find]
 include = ["ttsplan*"]
 

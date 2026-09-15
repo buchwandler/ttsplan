@@ -1,12 +1,42 @@
 # ttsplan
 
-TTSPlan is an engine-independent TTS planning compiler and interchange format. It converts text and speech markup into deterministic, human-readable semantic speech plans containing prepared spoken text, language runs, segments, pauses, directives, markers, and render units. TTSPlan performs no phonemization, model adaptation, inference, or audio synthesis.
+TTSPlan is an engine-independent TTS planning compiler and interchange
+format. It converts text and SSMD into deterministic semantic speech plans
+containing prepared spoken text, language runs, segments, pauses, directives,
+markers, and render units. It stops before G2P and produces no audio.
+
+## CLI
+
+Compile literal text directly:
 
 ```bash
-ttsplan compile chapter.ssmd --language en-us -o chapter.ttsplan.json
-ttsplan inspect chapter.ttsplan.json
-ttsplan validate chapter.ttsplan.json
+ttsplan compile "Doctor Smith bought 5 kg." --lang en-us --json
 ```
+
+Compile a file to a plan file:
+
+```bash
+ttsplan compile chapter.ssmd --lang en-us -o chapter.ttsplan.json
+```
+
+Use stdin and shell pipelines:
+
+```bash
+cat chapter.ssmd | ttsplan compile --lang en-us --input-format ssmd | jq .
+```
+
+The CLI also provides:
+
+```bash
+ttsplan --version
+ttsplan validate chapter.ttsplan.json
+ttsplan inspect chapter.ttsplan.json --segment 0
+```
+
+Compile JSON is written to stdout when no output file is supplied. Status
+messages use stderr, and existing output files require `--force`.
+
+## Python API
 
 ```python
 from ttsplan import PlannerConfig, TTSPlan, TTSPlanner
@@ -17,35 +47,52 @@ plan.save("example.ttsplan.json")
 assert TTSPlan.load("example.ttsplan.json") == plan
 ```
 
+The stable in-process boundary is `PlannerConfig`, `TTSPlanner`, and the
+immutable `TTSPlan` object. JSON is the portable persistence and interchange
+format; an in-process renderer can consume the Python object directly.
+
 ## Renderer-consumer boundary
 
-The supported in-process API is `PlannerConfig`, `TTSPlanner`, and `TTSPlan`. A renderer may consume the immutable `TTSPlan` Python object directly; JSON is the portable persistence and semantic interchange form, not a required in-process round trip. The serialized schema defines the semantic interchange contract and the Python model is its supported in-process representation.
+Renderers consume `PlanSegment.text`, which is prepared/spoken text, and use
+`spoken_start`/`spoken_end` for spoken-text coordinates. Resolved segment
+pauses, language, directives, annotations, boundaries, markers, units, and
+document metadata are public plan fields. Plans contain no phonemes, model
+tokens, model sessions, renderer configuration, provider documents, or audio.
 
-TTSPlan owns the source-to-plan boundary:
+The intended dependency direction is:
 
 ```text
-source text / SSMD -> prepared semantic speech plan -> external renderer
-                                                 -> engine-specific G2P and speech
+PyKokoro or another renderer -> TTSPlan
 ```
 
-Renderers consume `PlanSegment.text`, which is prepared/spoken text, and use `spoken_start`/`spoken_end` for prepared-text coordinates. Annotation spans and linguistic tokens likewise expose spoken coordinates. `PlanSegment.pause_before` and `pause_after` are already-resolved semantic pauses; consumers must not recompute pause policy. Logical voice references and document `voice_bindings` remain engine-neutral and are never resolved to concrete engine voice IDs.
+TTSPlan does not depend on PyKokoro, G2P engines, ONNX Runtime, or audio
+packages. PyKokoro remains an optional read-only parity reference during
+TTSPlan development.
 
-Plans contain no phonemes, model tokens, model sessions, audio, renderer configuration, or provider documents. Linguistic resources and provider objects are request-local. A planner is reusable for sequential requests; concurrent use is not promised unless the caller synchronizes access.
+## Documentation
+
+- [Getting started](docs/getting-started.md)
+- [CLI](docs/cli.md)
+- [Format and schema](docs/format.md)
+- [Consumer guide](docs/consumer-guide.md)
+- [Architecture](docs/architecture.md)
+- [Coordinates](docs/coordinate-spaces.md)
+- [PyKokoro integration](docs/pykokoro-integration.md)
+- [Changelog](docs/changelog.md)
 
 ## Versions
 
-The package version is dynamically derived from Git tags by setuptools-scm. A tag such as `v0.2.0` produces package version `0.2.0`; development and dirty checkouts use PEP 440 development versions. Release CI requires a matching release tag and verifies wheel, sdist, runtime, and metadata versions. The package version and TTSPlan `schema_version` are independent: releasing the package does not imply a schema change.
+The package version is dynamically derived from Git tags by setuptools-scm. The
+first public alpha package release is `0.1.0`. The package version and
+TTSPlan `schema_version` are independent: this release uses schema version `1`.
 
 ## Development
 
 ```bash
-python -m pip install -e '.[dev]'
-python -m pytest -q
+python -m pip install -e '.[dev,docs]'
+python -m pytest -q -m 'not reference'
 ruff check .
 mypy ttsplan
 python -m build
+sphinx-build -W --keep-going -b html docs docs/_build/html
 ```
-
-The `.ttsplan.json` file is the planning/rendering boundary. PyKokoro is only an optional read-only parity reference during development. The normal package remains independent and imports no renderer, G2P, ONNX, or audio packages.
-
-See [docs/format.md](docs/format.md), [docs/architecture.md](docs/architecture.md), [docs/coordinate-spaces.md](docs/coordinate-spaces.md), and [docs/debugging.md](docs/debugging.md).

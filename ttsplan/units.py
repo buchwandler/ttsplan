@@ -37,9 +37,7 @@ def make_units(
             for marker in markers
             if _marker_belongs(marker.spoken_position, groups, index)
         )
-        marker_values = tuple(
-            marker for marker in markers if marker.id in marker_ids
-        )
+        marker_values = tuple(marker for marker in markers if marker.id in marker_ids)
         provisional = PlanUnit(
             f"unit-{index:04d}",
             index,
@@ -52,13 +50,15 @@ def make_units(
         units.append(
             replace(
                 provisional,
-                content_hash=semantic_hash(unit_hash_payload(_UnitView(group, marker_ids, marker_values))),
+                content_hash=semantic_hash(
+                    unit_hash_payload(_UnitView(group, marker_ids, marker_values))
+                ),
             )
         )
     return tuple(units)
-def _marker_belongs(
-    position: int, groups: list[list[PlanSegment]], index: int
- ) -> bool:
+
+
+def _marker_belongs(position: int, groups: list[list[PlanSegment]], index: int) -> bool:
     group = groups[index]
     start = group[0].spoken_start
     end = group[-1].spoken_end
@@ -67,7 +67,6 @@ def _marker_belongs(
     if index > 0 and groups[index - 1][-1].spoken_end <= position <= start:
         return True
     return start <= position < end or (index == len(groups) - 1 and position == end)
-
 
 
 class _UnitView:

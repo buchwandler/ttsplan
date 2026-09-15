@@ -517,6 +517,7 @@ def _check_shape(data: Mapping[str, Any]) -> None:
 
     _check_nested_types(data)
 
+
 def _check_nested_types(data: Mapping[str, Any]) -> None:
     _expect(data.get("producer"), Mapping, "$.producer")
     _expect(data.get("source"), Mapping, "$.source")
@@ -531,7 +532,17 @@ def _check_nested_types(data: Mapping[str, Any]) -> None:
         _expect(preparation.get(key), str, f"$.preparation.{key}")
     for key in ("languages", "replacements", "warnings"):
         _expect(preparation.get(key), list, f"$.preparation.{key}")
-    for key in ("languages", "annotations", "boundaries", "tokens", "segments", "units", "markers", "warnings", "diagnostics"):
+    for key in (
+        "languages",
+        "annotations",
+        "boundaries",
+        "tokens",
+        "segments",
+        "units",
+        "markers",
+        "warnings",
+        "diagnostics",
+    ):
         _expect(data.get(key), list, f"$.{key}")
     for index, item in enumerate(data["languages"]):
         value = _expect(item, Mapping, f"$.languages[{index}]")
@@ -575,12 +586,8 @@ def _check_nested_types(data: Mapping[str, Any]) -> None:
 def _expect(value: Any, expected: type | tuple[type, ...], path: str) -> Any:
     valid = type(value) is int if expected is int else isinstance(value, expected)
     if not valid:
-        raise PlanFormatError(
-            f"expected {expected} at {path}", code="field.type", path=path
-        )
+        raise PlanFormatError(f"expected {expected} at {path}", code="field.type", path=path)
     return value
-
-
 
 
 def _pause(data: Mapping[str, Any] | None) -> ResolvedPause:
@@ -619,12 +626,12 @@ def _directive(data: Mapping[str, Any] | None) -> SegmentDirectives:
         if audio
         else None,
     )
+
+
 def _optional_int(value: Any) -> int | None:
     if value is None:
         return None
     return int(value)
-
-
 
 
 def _from_dict(data: Mapping[str, Any]) -> TTSPlan:
@@ -810,7 +817,12 @@ def validate_plan(plan: TTSPlan) -> None:
             )
     annotation_ids = {annotation.id for annotation in plan.annotations}
     for annotation in plan.annotations:
-        if not (0 <= annotation.structural_start <= annotation.structural_end <= len(plan.texts.structural)):
+        if not (
+            0
+            <= annotation.structural_start
+            <= annotation.structural_end
+            <= len(plan.texts.structural)
+        ):
             raise PlanValidationError(
                 "annotation structural range is outside structural text",
                 code="annotation.structural_range",
@@ -822,8 +834,10 @@ def validate_plan(plan: TTSPlan) -> None:
             )
         spoken_start = annotation.spoken_start
         spoken_end = annotation.spoken_end
-        if spoken_start is not None and spoken_end is not None and not (
-            0 <= spoken_start <= spoken_end <= len(text)
+        if (
+            spoken_start is not None
+            and spoken_end is not None
+            and not (0 <= spoken_start <= spoken_end <= len(text))
         ):
             raise PlanValidationError(
                 "annotation spoken range is outside spoken text",

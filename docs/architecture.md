@@ -4,9 +4,16 @@
 text / SSMD -> document parser -> language plan -> linguistic pass A
     -> written-to-spoken preparation -> linguistic pass B
     -> segmentation -> directive resolution -> pause planning
-    -> units and hashes -> .ttsplan.json -> renderer
+    -> units and hashes -> TTSPlan -> external renderer
+                                      -> engine-specific G2P and speech
 ```
 
-The preparation boundary preserves both structural and spoken coordinate spaces. Linguistic analysis is request-local and provider documents are released before the immutable plan is returned. Pause events retain provenance and resolved event IDs; plan identity excludes diagnostics and producer metadata while unit hashes include ordered segment semantics, resolved pauses, and marker content.
+TTSPlan is the complete source-to-semantic-plan compiler boundary. G2P begins after the TTSPlan boundary. The public `TTSPlan` Python object is a supported immutable in-process renderer input; the `.ttsplan.json` schema is the portable persistence and semantic interchange contract.
 
-TTSPlan ends before G2P and audio. Public plans contain only immutable, JSON-compatible semantic results. Live parser resources, provider documents, spaCy documents, models, and sessions are request-local. The plan file, rather than a Python object graph, is the inter-package contract.
+Preparation preserves structural and spoken coordinate spaces. `spoken_start`, `spoken_end`, and `spoken_position` refer to prepared text. Renderers must use these ranges when consuming `PlanSegment.text`, `AnnotationSpan`, and `TokenAnnotation`; structural/source offsets are not valid slices into prepared text.
+
+Linguistic analysis and provider documents are request-local. Returned plans contain JSON-compatible semantic results only: no live parser objects, spaCy documents, models, sessions, provider caches, phonemes, engine token IDs, or audio. A reusable planner may share sequential resource caches, but concurrent use is not promised.
+
+Pause events retain provenance and resolved event IDs. Pause defaults are normalized to finite seconds with explicit precedence, and segments expose resolved base pauses directly. Logical voices are intent references; document `voice_bindings` metadata remains separate and no concrete engine voice is selected.
+
+Plan identity is deterministic and renderer-independent. Unit hashes include ordered segment semantics, resolved pauses, and marker content. Diagnostics and producer metadata do not define semantic identity. Package version is derived from Git tags by setuptools-scm and is independent of the explicit TTSPlan `schema_version`.

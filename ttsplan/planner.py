@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import asdict, replace
 from typing import Any
 
-from .config import PlannerConfig
+from .config import PauseConfig, PlannerConfig, parse_duration
 from .directives import resolve_directives
-from .exceptions import PlanningError
+from .exceptions import ConfigurationError, PlanningError
 from .language import build_language_runs, spans_from_annotations
 from .linguistics import LinguisticResourcePool, analyze_run_analyses
 from .model import (
@@ -25,23 +25,38 @@ from .units import make_units
 
 
 class TTSPlanner:
+    """Reusable planner for sequential requests.
+
+    Linguistic resource caches are shared, but request configuration and all
+    intermediate state are local to :meth:`plan`. Concurrent use is not
+    promised; callers should use one planner per thread or synchronize access.
+    """
+
     def __init__(self, config: PlannerConfig) -> None:
         self.config = config
         self._resources = LinguisticResourcePool()
 
-    def plan(self, text: str, *, unit: str | None = None) -> TTSPlan:
+    def plan(
+        self, text: str, *, config: PlannerConfig | None = None, unit: str | None = None
+    ) -> TTSPlan:
         if not isinstance(text, str):
             raise TypeError("text must be a string")
-        config = self.config
+        effective_config = config if config is not None else self.config
+        if unit is not None:
+            if unit not in {"paragraph", "sentence"}:
+                raise ConfigurationError("unit must be 'paragraph' or 'sentence'")
+            selected_unit = unit
+        else:
+            selected_unit = effective_config.unit
+        config = effective_config
         parsed = self._parse(text, config)
+        pause_config = _effective_pause_config(config, parsed.header)
         source_runs = build_language_runs(
             parsed.structural_text,
             spans_from_annotations(parsed.annotations),
             config.language,
             dict(config.language_aliases),
         )
-        # Pass A is request-local state used by preparation. It is deliberately not
-        # retained in the public plan.
         pass_a = analyze_run_analyses(
             parsed.structural_text, source_runs, config.linguistics, self._resources
         )
@@ -65,27 +80,21 @@ class TTSPlanner:
             config.language,
             dict(config.language_aliases),
         )
-        # Pass B is performed on the prepared language runs. Provider documents
-        # and the Pass A values are released after this lightweight extraction.
-        pass_b = analyze_run_analyses(
-            spoken, runs, config.linguistics, self._resources
-        )
+        pass_b = analyze_run_analyses(spoken, runs, config.linguistics, self._resources)
         tokens = tuple(token for analysis in pass_b for token in analysis.tokens)
         boundaries = list(prepared.boundaries)
-        boundaries.extend(
-            _linguistic_boundaries(spoken, runs, config, start_id=len(boundaries))
-        )
+        boundaries.extend(_linguistic_boundaries(spoken, runs, config, start_id=len(boundaries)))
         segments = _segment(spoken, runs, prepared.annotations, boundaries, config, pass_b)
-        boundaries.extend(_derived_boundaries(segments, boundaries, config))
         segments = _attach_membership(segments, tokens, prepared.annotations)
         segments = [resolve_directives(segment, prepared.annotations) for segment in segments]
-        segments = resolve_pauses(segments, boundaries, config.pauses)
+        boundaries.extend(_derived_boundaries(segments, boundaries, pause_config))
+        segments = resolve_pauses(segments, boundaries, pause_config)
         markers = tuple(
             _map_marker(marker, prepared.info.offset_map, len(parsed.structural_text), len(spoken))
             for marker in parsed.markers
         )
         segment_tuple = tuple(segments)
-        units = make_units(segment_tuple, markers, unit or config.unit)
+        units = make_units(segment_tuple, markers, selected_unit)
         metadata = dict(parsed.metadata)
         metadata["planning"] = {
             "linguistic_passes": 2,
@@ -96,13 +105,14 @@ class TTSPlanner:
         if config.diagnostics:
             diagnostics = (
                 Diagnostic(
-                    "planning.complete",
-                    "Plan compiled without renderer or audio processing",
+                    "planning.complete", "Plan compiled without renderer or audio processing"
                 ),
             )
+        plan_config = _config_dict(config)
+        plan_config["unit"] = selected_unit
         plan = TTSPlan(
             source=PlanSource(parsed.source_text and config.document_format or "plain", text),
-            config=_config_dict(config),
+            config=plan_config,
             texts=PlanTexts(parsed.structural_text, spoken),
             preparation=prepared.info,
             languages=runs,
@@ -130,9 +140,47 @@ class TTSPlanner:
         self._resources.clear()
 
 
+def _effective_pause_config(config: PlannerConfig, header: dict[str, Any]) -> PauseConfig:
+    values: dict[str, Any] = {"mode": config.pauses.mode}
+    values.update(
+        {
+            name: getattr(config.pauses, name)
+            for name in (
+                "weak",
+                "clause",
+                "sentence",
+                "paragraph",
+                "parenthetical",
+                "voice_change",
+                "enabled",
+            )
+        }
+    )
+    header_defaults = header.get("pause_defaults") if isinstance(header, dict) else None
+    if isinstance(header_defaults, dict):
+        for name, value in header_defaults.items():
+            if name == "enabled" and isinstance(value, bool):
+                values[name] = value
+            elif name != "enabled":
+                try:
+                    values[name] = parse_duration(value, field_name=f"pause_defaults.{name}")
+                except ConfigurationError:
+                    continue
+    if config.ssmd.pause_defaults:
+        for name, value in config.ssmd.pause_defaults.items():
+            values[name] = (
+                bool(value)
+                if name == "enabled"
+                else parse_duration(value, field_name=f"ssmd.pause_defaults.{name}")
+            )
+    return PauseConfig(**values)
+
+
 def _config_dict(config: PlannerConfig) -> dict[str, Any]:
     result = asdict(config)
     result["language_aliases"] = dict(config.language_aliases)
+    if result.get("ssmd", {}).get("pause_defaults") is not None:
+        result["ssmd"]["pause_defaults"] = dict(config.ssmd.pause_defaults or {})
     return result
 
 
@@ -143,15 +191,14 @@ def _segment(
     boundaries: list[BoundaryEvent],
     config: PlannerConfig,
     analyses: tuple[Any, ...] = (),
- ) -> list[PlanSegment]:
+) -> list[PlanSegment]:
     if not text:
         return []
     result: list[PlanSegment] = []
     for run_index, run in enumerate(runs):
         local_text = text[run.spoken_start : run.spoken_end]
         analysis = analyses[run_index] if run_index < len(analyses) else None
-        sentence_items = _split_run(local_text, run.language, config, analysis)
-        for item in sentence_items:
+        for item in _split_run(local_text, run.language, config, analysis):
             local_start = int(getattr(item, "char_start", 0))
             local_end = int(getattr(item, "char_end", len(local_text)))
             start = run.spoken_start + local_start
@@ -194,15 +241,11 @@ def _segment(
 
 def _split_run(
     text: str, language: str, config: PlannerConfig, analysis: Any | None = None
- ) -> list[Any]:
+) -> list[Any]:
     try:
         import phrasplit
 
-        kwargs: dict[str, Any] = {
-            "mode": "sentence",
-            "use_spacy": False,
-            "language": language,
-        }
+        kwargs: dict[str, Any] = {"mode": "sentence", "use_spacy": False, "language": language}
         if analysis is not None and analysis.provider_doc is not None:
             kwargs["nlp"] = analysis.provider_doc
         items = phrasplit.split_with_offsets(text, **kwargs)
@@ -213,22 +256,26 @@ def _split_run(
     for item in items:
         start = int(getattr(item, "char_start", -1))
         end = int(getattr(item, "char_end", -1))
-        if not (0 <= start < end <= len(text)):
-            continue
-        if text[start:end] != str(getattr(item, "text", text[start:end])):
-            continue
-        if start < previous:
-            continue
-        valid.append(item)
-        previous = end
+        if (
+            0 <= start < end <= len(text)
+            and text[start:end] == str(getattr(item, "text", text[start:end]))
+            and start >= previous
+        ):
+            valid.append(item)
+            previous = end
     if not valid and text:
         return [_FallbackSplit(0, len(text), 0, 0, text)]
-    if any(text[left.char_end:right.char_start].strip() for left, right in zip(valid, valid[1:], strict=False)):
+    if any(
+        text[left.char_end : right.char_start].strip()
+        for left, right in zip(valid, valid[1:], strict=False)
+    ):
         return [_FallbackSplit(0, len(text), 0, 0, text)]
     return _repair_quote_boundaries(valid, text)
+
+
 def _repair_quote_boundaries(items: list[Any], text: str) -> list[Any]:
     repaired: list[Any] = []
-    closing = "\\\"'”’)]}"
+    closing = "\"'”’)]}"
     for item in items:
         current = _FallbackSplit(
             int(item.char_start),
@@ -237,7 +284,11 @@ def _repair_quote_boundaries(items: list[Any], text: str) -> list[Any]:
             int(getattr(item, "sentence_idx", 0) or 0),
             text[int(item.char_start) : int(item.char_end)],
         )
-        if repaired and repaired[-1].text.rstrip().endswith((".", "!", "?")) and current.text.lstrip().startswith(tuple(closing)):
+        if (
+            repaired
+            and repaired[-1].text.rstrip().endswith((".", "!", "?"))
+            and current.text.lstrip().startswith(tuple(closing))
+        ):
             previous = repaired[-1]
             previous.char_end = current.char_end
             previous.text = text[previous.char_start : previous.char_end]
@@ -246,16 +297,9 @@ def _repair_quote_boundaries(items: list[Any], text: str) -> list[Any]:
     return repaired
 
 
-
-
 class _FallbackSplit:
     def __init__(
-        self,
-        char_start: int,
-        char_end: int,
-        paragraph_idx: int,
-        sentence_idx: int,
-        text: str = "",
+        self, char_start: int, char_end: int, paragraph_idx: int, sentence_idx: int, text: str = ""
     ) -> None:
         self.char_start = char_start
         self.char_end = char_end
@@ -267,7 +311,7 @@ class _FallbackSplit:
 
 def _linguistic_boundaries(
     text: str, runs: tuple[Any, ...], config: PlannerConfig, *, start_id: int = 0
- ) -> list[BoundaryEvent]:
+) -> list[BoundaryEvent]:
     try:
         import phrasplit
     except ImportError:
@@ -283,22 +327,24 @@ def _linguistic_boundaries(
             clause_items = []
         for item in clause_items:
             kind = str(getattr(item, "kind", ""))
-            if "parenthetical" in kind:
-                event_kind = "parenthetical"
-            elif "clause" in kind or "comma" in kind:
-                event_kind = "clausal_comma"
-            else:
-                continue
-            result.append(
-                BoundaryEvent(
-                    id=f"boundary-{start_id + len(result):06d}",
-                    position=run.spoken_start + int(getattr(item, "char_start", 0)),
-                    kind=event_kind,
-                    origin="phrasplit",
-                    strength="weak",
-                    attrs={"detected_kind": kind, "automatic": True},
-                )
+            event_kind = (
+                "parenthetical"
+                if "parenthetical" in kind
+                else "clausal_comma"
+                if ("clause" in kind or "comma" in kind)
+                else None
             )
+            if event_kind:
+                result.append(
+                    BoundaryEvent(
+                        f"boundary-{start_id + len(result):06d}",
+                        run.spoken_start + int(getattr(item, "char_start", 0)),
+                        event_kind,
+                        origin="phrasplit",
+                        strength="weak",
+                        attrs={"detected_kind": kind, "automatic": True},
+                    )
+                )
         try:
             parenthetical_items = phrasplit.detect_parenthetical_boundaries(
                 local, language=run.language
@@ -308,9 +354,9 @@ def _linguistic_boundaries(
         for item in parenthetical_items:
             result.append(
                 BoundaryEvent(
-                    id=f"boundary-{start_id + len(result):06d}",
-                    position=run.spoken_start + int(getattr(item, "char_start", 0)),
-                    kind="parenthetical",
+                    f"boundary-{start_id + len(result):06d}",
+                    run.spoken_start + int(getattr(item, "char_start", 0)),
+                    "parenthetical",
                     origin="phrasplit",
                     strength="weak",
                     attrs={
@@ -323,7 +369,7 @@ def _linguistic_boundaries(
 
 
 def _derived_boundaries(
-    segments: list[PlanSegment], existing: list[BoundaryEvent], config: PlannerConfig
+    segments: list[PlanSegment], existing: list[BoundaryEvent], config: PauseConfig
 ) -> list[BoundaryEvent]:
     result: list[BoundaryEvent] = []
     next_id = len(existing)
@@ -334,25 +380,20 @@ def _derived_boundaries(
             kind, strength = "paragraph", "paragraph"
         elif previous.sentence != current.sentence:
             kind, strength = "sentence", "sentence"
-        elif (
-            previous.language != current.language
-            and config.pauses.mode == "auto"
-            and _voice_changed(previous, current)
-        ):
+        elif config.mode == "auto" and _voice_changed(previous, current):
             kind, strength = "voice_change", "weak"
-        if kind is None:
-            continue
-        result.append(
-            BoundaryEvent(
-                id=f"boundary-{next_id:06d}",
-                position=previous.spoken_end,
-                kind=kind,
-                origin="planner",
-                strength=strength,
-                attrs={"automatic": True},
+        if kind is not None:
+            result.append(
+                BoundaryEvent(
+                    f"boundary-{next_id:06d}",
+                    previous.spoken_end,
+                    kind,
+                    origin="planner",
+                    strength=strength,
+                    attrs={"automatic": True},
+                )
             )
-        )
-        next_id += 1
+            next_id += 1
     return result
 
 
@@ -388,8 +429,21 @@ def _semantic_annotation(annotation: AnnotationSpan) -> bool:
     return any(
         key in annotation.attrs
         for key in (
-            "lang", "language", "voice", "voice_name", "ph", "phonemes", "rate", "pitch",
-            "volume", "emphasis", "level", "audio", "audio_src", "src", "speed",
+            "lang",
+            "language",
+            "voice",
+            "voice_name",
+            "ph",
+            "phonemes",
+            "rate",
+            "pitch",
+            "volume",
+            "emphasis",
+            "level",
+            "audio",
+            "audio_src",
+            "src",
+            "speed",
         )
     )
 
@@ -404,5 +458,7 @@ def _map_marker(marker: Marker, offset_map: Any, source_length: int, output_leng
     elif source_length == output_length:
         position = source_position
     else:
-        position = min(output_length, round(source_position * output_length / max(1, source_length)))
+        position = min(
+            output_length, round(source_position * output_length / max(1, source_length))
+        )
     return replace(marker, spoken_position=position)

@@ -112,7 +112,15 @@
     },
     "annotation": {
       "type": "object",
-      "required": ["id", "structural_start", "structural_end", "spoken_start", "spoken_end", "kind", "attrs"],
+      "required": [
+        "id",
+        "structural_start",
+        "structural_end",
+        "spoken_start",
+        "spoken_end",
+        "kind",
+        "attrs"
+      ],
       "properties": {
         "id": { "type": "string" },
         "structural_start": { "$ref": "#/$defs/range" },

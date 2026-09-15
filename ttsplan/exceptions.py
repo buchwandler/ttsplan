@@ -5,6 +5,10 @@ class TTSPlanError(Exception):
     """Base exception for ttsplan."""
 
 
+class ConfigurationError(TTSPlanError):
+    """A public planning configuration value is invalid."""
+
+
 class PlanFormatError(TTSPlanError):
     """The serialized plan is not structurally valid."""
 
@@ -40,4 +44,4 @@ class TextPreparationError(PlanningError):
 
 
 class SegmentationError(PlanningError):
-    """Text segmentation failed."""
+    """Segmentation failed."""

@@ -1,6 +1,13 @@
 from ._version import __version__
-from .config import LinguisticsConfig, PauseConfig, PlannerConfig, SSMDConfig
+from .config import (
+    LinguisticsConfig,
+    PauseConfig,
+    PlannerConfig,
+    SSMDConfig,
+    parse_duration,
+)
 from .exceptions import (
+    ConfigurationError,
     LanguagePlanError,
     PlanFormatError,
     PlanningError,
@@ -39,6 +46,7 @@ __all__ = [
     "PauseConfig",
     "LinguisticsConfig",
     "SSMDConfig",
+    "parse_duration",
     "TTSPlanner",
     "TTSPlan",
     "PlanSource",
@@ -62,6 +70,7 @@ __all__ = [
     "normalize_language",
     "build_language_runs",
     "TTSPlanError",
+    "ConfigurationError",
     "PlanFormatError",
     "PlanValidationError",
     "UnsupportedSchemaError",

@@ -10,20 +10,33 @@ from .model import BoundaryEvent, PlanSegment, ResolvedPause
 def resolve_pauses(
     segments: list[PlanSegment], boundaries: list[BoundaryEvent], config: PauseConfig
 ) -> list[PlanSegment]:
+    """Resolve semantic pause events without renderer-specific policy."""
     events_after: dict[int, list[BoundaryEvent]] = defaultdict(list)
     events_before: dict[int, list[BoundaryEvent]] = defaultdict(list)
     for event in boundaries:
-        if event.attrs.get("automatic") and config.mode != "auto" and event.kind in {"clausal_comma", "parenthetical", "voice_change"}:
+        automatic = bool(event.attrs.get("automatic")) or (
+            event.kind in {"paragraph", "sentence"}
+            and event.seconds is None
+            and event.origin in {"plain", "ssmd", "planner"}
+        )
+        if automatic and not config.enabled:
+            continue
+        if (
+            automatic
+            and config.mode != "auto"
+            and event.kind in {"clausal_comma", "parenthetical", "voice_change"}
+        ):
             continue
         duration = event.seconds
         if duration is None:
             duration = {
+                "weak": config.weak,
                 "clause": config.clause,
                 "clausal_comma": config.clause,
                 "sentence": config.sentence,
                 "paragraph": config.paragraph,
                 "parenthetical": config.parenthetical,
-                "voice_change": config.weak,
+                "voice_change": config.voice_change,
             }.get(event.kind, config.weak)
         resolved = replace(event, seconds=max(0.0, float(duration or 0.0)))
         anchor = str(event.attrs.get("anchor", "after"))

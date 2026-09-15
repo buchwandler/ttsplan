@@ -87,41 +87,15 @@
   "plan_id": "sha256:5c09bcf9d41cfb42c772f610c4937f1080c4b8911fc7837bae81b98f01c80284",
   "preparation": {
     "backend": "spokenform",
-    "languages": [
-      "en-us"
-    ],
+    "languages": ["en-us"],
     "offset_map": {
       "edits": [],
-      "output_left": [
-        0,
-        1,
-        2,
-        3,
-        4
-      ],
+      "output_left": [0, 1, 2, 3, 4],
       "output_length": 4,
-      "output_right": [
-        0,
-        1,
-        2,
-        3,
-        4
-      ],
-      "source_left": [
-        0,
-        1,
-        2,
-        3,
-        4
-      ],
+      "output_right": [0, 1, 2, 3, 4],
+      "source_left": [0, 1, 2, 3, 4],
       "source_length": 4,
-      "source_right": [
-        0,
-        1,
-        2,
-        3,
-        4
-      ]
+      "source_right": [0, 1, 2, 3, 4]
     },
     "replacements": [],
     "source_text": "fast",
@@ -136,10 +110,7 @@
   "schema_version": 1,
   "segments": [
     {
-      "annotation_ids": [
-        "annotation-000000",
-        "annotation-000001"
-      ],
+      "annotation_ids": ["annotation-000000", "annotation-000001"],
       "clause": 0,
       "directives": {
         "audio": null,
@@ -171,9 +142,7 @@
       "structural_end": null,
       "structural_start": null,
       "text": "fast",
-      "token_indices": [
-        0
-      ]
+      "token_indices": [0]
     }
   ],
   "source": {
@@ -203,9 +172,7 @@
       "index": 0,
       "kind": "paragraph",
       "marker_ids": [],
-      "segment_ids": [
-        "seg-000000"
-      ],
+      "segment_ids": ["seg-000000"],
       "spoken_end": 4,
       "spoken_start": 0
     }

@@ -109,7 +109,9 @@ class LinguisticResourcePool:
                 )
             if config.require_spacy:
                 raise RuntimeError("spaCy is required but no local model is available")
-        return LinguisticAnalysis(run.language, text, _fallback_tokens(text, run.language), None, None)
+        return LinguisticAnalysis(
+            run.language, text, _fallback_tokens(text, run.language), None, None
+        )
 
 
 def _fallback_tokens(text: str, language: str) -> tuple[TokenAnnotation, ...]:
@@ -152,7 +154,14 @@ def analyze_run_analyses(
             for i, token in enumerate(analysis.tokens)
         )
         analyses.append(
-            RunAnalysis(run.language, run.spoken_start, run.spoken_end, tokens, analysis.provider_doc, analysis.model_name)
+            RunAnalysis(
+                run.language,
+                run.spoken_start,
+                run.spoken_end,
+                tokens,
+                analysis.provider_doc,
+                analysis.model_name,
+            )
         )
     return tuple(analyses)
 
@@ -163,4 +172,8 @@ def analyze_runs(
     config: LinguisticsConfig,
     pool: LinguisticResourcePool,
 ) -> tuple[TokenAnnotation, ...]:
-    return tuple(token for analysis in analyze_run_analyses(text, runs, config, pool) for token in analysis.tokens)
+    return tuple(
+        token
+        for analysis in analyze_run_analyses(text, runs, config, pool)
+        for token in analysis.tokens
+    )

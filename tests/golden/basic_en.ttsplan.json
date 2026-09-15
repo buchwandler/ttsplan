@@ -59,49 +59,15 @@
   "plan_id": "sha256:024bb7967373649ab7d975ad6b0e145b190688ecfd0d40cf02029cbfbfadda62",
   "preparation": {
     "backend": "spokenform",
-    "languages": [
-      "en-us"
-    ],
+    "languages": ["en-us"],
     "offset_map": {
       "edits": [],
-      "output_left": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
+      "output_left": [0, 1, 2, 3, 4, 5, 6],
       "output_length": 6,
-      "output_right": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "source_left": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
+      "output_right": [0, 1, 2, 3, 4, 5, 6],
+      "source_left": [0, 1, 2, 3, 4, 5, 6],
       "source_length": 6,
-      "source_right": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ]
+      "source_right": [0, 1, 2, 3, 4, 5, 6]
     },
     "replacements": [],
     "source_text": "Hello.",
@@ -142,9 +108,7 @@
       "structural_end": null,
       "structural_start": null,
       "text": "Hello.",
-      "token_indices": [
-        0
-      ]
+      "token_indices": [0]
     }
   ],
   "source": {
@@ -174,9 +138,7 @@
       "index": 0,
       "kind": "paragraph",
       "marker_ids": [],
-      "segment_ids": [
-        "seg-000000"
-      ],
+      "segment_ids": ["seg-000000"],
       "spoken_end": 6,
       "spoken_start": 0
     }

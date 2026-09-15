@@ -79,7 +79,9 @@ class SpokenformTextPreparer:
                 ver = None
         except (ImportError, ValueError, TypeError) as exc:
             raise TextPreparationError(str(exc)) from exc
-        mapped_annotations = tuple(_map_annotation(annotation, offset) for annotation in annotations)
+        mapped_annotations = tuple(
+            _map_annotation(annotation, offset) for annotation in annotations
+        )
         mapped_boundaries = tuple(_map_boundary(boundary, offset) for boundary in boundaries)
         info = TextPreparationInfo(
             "spokenform",
@@ -106,7 +108,14 @@ class IdentityTextPreparer:
     ) -> PreparedText:
         offset = _IdentityOffsetMap(len(text))
         info = TextPreparationInfo(
-            "identity", None, text, text, tuple(run.language for run in runs), (), offset.to_dict(), ()
+            "identity",
+            None,
+            text,
+            text,
+            tuple(run.language for run in runs),
+            (),
+            offset.to_dict(),
+            (),
         )
         return PreparedText(
             text,
@@ -210,8 +219,15 @@ def _replacement_dict(item: Any) -> dict[str, Any]:
     return {
         key: getattr(item, key)
         for key in (
-            "source_start", "source_end", "output_start", "output_end", "source", "replacement",
-            "kind", "rule", "language",
+            "source_start",
+            "source_end",
+            "output_start",
+            "output_end",
+            "source",
+            "replacement",
+            "kind",
+            "rule",
+            "language",
         )
         if hasattr(item, key)
     }

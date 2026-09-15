@@ -35,9 +35,10 @@ def test_reference_frontend_normalized_parity():
             segment["text"] for segment in reference["segments"] if segment["text"].strip()
         ]
         native_segments = [segment.text for segment in plan.segments]
+
         def normalize(value: str) -> str:
             return " ".join(value.split())
-        assert (
-            reference_segments == native_segments
-            or normalize("".join(reference_segments)) == normalize("".join(native_segments))
-        )
+
+        assert reference_segments == native_segments or normalize(
+            "".join(reference_segments)
+        ) == normalize("".join(native_segments))

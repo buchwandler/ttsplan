@@ -77,7 +77,9 @@ def normalize(text: str) -> dict[str, object]:
         ]
         preparation = getattr(document, "preparation", None)
         return {
-            "structural_text": str(_value(document, "structural_clean_text", "clean_text", default="")),
+            "structural_text": str(
+                _value(document, "structural_clean_text", "clean_text", default="")
+            ),
             "spoken_text": str(_value(preparation, "spoken_text", default="")),
             "languages": [],
             "annotations": annotations,

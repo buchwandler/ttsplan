@@ -99,7 +99,7 @@ class TTSPlanner:
         metadata["planning"] = {
             "linguistic_passes": 2,
             "engine_independent": True,
-            "pass_a_tokens": len(pass_a),
+            "pass_a_tokens": sum(len(run.tokens) for run in pass_a),
         }
         diagnostics: tuple[Diagnostic, ...] = ()
         if config.diagnostics:

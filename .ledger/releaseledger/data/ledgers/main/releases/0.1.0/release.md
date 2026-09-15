@@ -25,4 +25,5 @@ git_head_sha: null
 git_range: null
 git_commit_count: null
 ---
+
 First public alpha release of the engine-independent planning compiler.

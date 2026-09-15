@@ -42,9 +42,9 @@ def test_plain_spokenform_consumer_contract() -> None:
 
 
 def test_multilingual_ssmd_consumer_contract() -> None:
-    plan = TTSPlanner(
-        PlannerConfig(language="en-us", text_preparation="identity")
-    ).plan('Hello [Bonjour]{lang="fr"}.')
+    plan = TTSPlanner(PlannerConfig(language="en-us", text_preparation="identity")).plan(
+        'Hello [Bonjour]{lang="fr"}.'
+    )
     assert {run.language for run in plan.languages} == {"en-us", "fr"}
     assert_public_consumer_contract(plan)
 
@@ -58,17 +58,17 @@ def test_voice_directive_and_document_binding_are_public() -> None:
 
 
 def test_explicit_break_is_a_public_boundary() -> None:
-    plan = TTSPlanner(
-        PlannerConfig(language="en-us", text_preparation="identity")
-    ).plan("Hello ...c world")
+    plan = TTSPlanner(PlannerConfig(language="en-us", text_preparation="identity")).plan(
+        "Hello ...c world"
+    )
     assert any(boundary.kind == "explicit" for boundary in plan.boundaries)
     assert_public_consumer_contract(plan)
 
 
 def test_automatic_semantic_pauses_are_resolved() -> None:
-    plan = TTSPlanner(
-        PlannerConfig(language="en-us", pauses=PauseConfig(mode="auto"))
-    ).plan("They changed clothes (stained with blood).")
+    plan = TTSPlanner(PlannerConfig(language="en-us", pauses=PauseConfig(mode="auto"))).plan(
+        "They changed clothes (stained with blood)."
+    )
     parenthetical_ids = {event.id for event in plan.boundaries if event.kind == "parenthetical"}
     assert parenthetical_ids
     assert any(
@@ -81,9 +81,9 @@ def test_automatic_semantic_pauses_are_resolved() -> None:
 
 @pytest.mark.parametrize("unit", ["paragraph", "sentence"])
 def test_markers_and_unit_ownership_are_public(unit: str) -> None:
-    plan = TTSPlanner(
-        PlannerConfig(language="en-us", unit=unit, text_preparation="identity")
-    ).plan("One. @mark Two.")
+    plan = TTSPlanner(PlannerConfig(language="en-us", unit=unit, text_preparation="identity")).plan(
+        "One. @mark Two."
+    )
     assert plan.markers
     owned = [marker_id for item in plan.units for marker_id in item.marker_ids]
     assert owned == [plan.markers[0].id]

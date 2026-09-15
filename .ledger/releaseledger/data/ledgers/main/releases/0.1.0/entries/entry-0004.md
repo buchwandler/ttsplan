@@ -13,8 +13,8 @@ audience: null
 scopes: []
 source_refs: []
 paths:
-- tests/test_consumer_contract.py
-- tests/reference/test_pykokoro_parity.py
+  - tests/test_consumer_contract.py
+  - tests/reference/test_pykokoro_parity.py
 issues: []
 prs: []
 sources: []

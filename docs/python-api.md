@@ -4,6 +4,10 @@ The supported in-process boundary is the immutable `TTSPlan` object returned
 by `TTSPlanner`. JSON is the portable persistence and interchange format, but
 an in-process consumer does not need to serialize and reload a plan.
 
+The Python defaults are deliberately spaCy-free: `PlannerConfig` uses `spokenform` text preparation, and `PauseConfig().mode` is `"tts"`. The CLI additionally defaults to the `spacy off` linguistic-resource policy, which uses deterministic fallback tokenization and analysis without requiring an installed spaCy model.
+
+spaCy enrichment is opt-in through the CLI's `--spacy auto` policy or an explicit `LinguisticsConfig` with a compatible local model. It may provide richer tokenization, POS tags, lemmas, and tags, but TTSPlan never downloads a model implicitly.
+
 ## Planner configuration
 
 ```{autoclass} ttsplan.PlannerConfig

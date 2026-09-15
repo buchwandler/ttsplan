@@ -6,13 +6,21 @@ from pathlib import Path
 
 import pytest
 
-from ttsplan.cli import main
+from ttsplan.cli import build_parser, main
 
 
 def _payload(capsys: pytest.CaptureFixture[str]) -> dict[str, object]:
     captured = capsys.readouterr()
     assert captured.err == ""
     return json.loads(captured.out)
+
+
+def test_compile_cli_defaults() -> None:
+    args = build_parser().parse_args(["compile", "Hello world.", "--lang", "en"])
+
+    assert args.text_preparation == "spokenform"
+    assert args.pause_mode == "tts"
+    assert args.spacy == "off"
 
 
 def test_compile_literal_text_to_stdout_json(capsys: pytest.CaptureFixture[str]) -> None:

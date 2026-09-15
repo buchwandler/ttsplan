@@ -62,6 +62,10 @@ validation errors use exit code 1 and are reported without a traceback.
 The default spaCy policy is `off`, so the CLI does not depend on whichever
 optional model happens to be installed.
 
+The complete defaults are `--text-preparation spokenform`, `--pause-mode tts`, and `--spacy off`. `spokenform` is the default text-preparation backend, while `tts` is the default pause mode. `--spacy off` uses TTSPlan's deterministic fallback tokenizer and analysis and does not require an installed spaCy model.
+
+Use `--spacy auto` only as an opt-in enrichment policy. If a compatible local model is available, it may provide richer tokenization, POS tags, lemmas, and tags; `auto` is not the default and no model is downloaded automatically.
+
 ## Other commands
 
 ```bash

@@ -13,8 +13,8 @@ audience: null
 scopes: []
 source_refs: []
 paths:
-- ttsplan/cli.py
-- tests/test_cli.py
+  - ttsplan/cli.py
+  - tests/test_cli.py
 issues: []
 prs: []
 sources: []

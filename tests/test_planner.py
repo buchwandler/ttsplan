@@ -1,4 +1,4 @@
-from ttsplan import PlannerConfig, TTSPlanner
+from ttsplan import PauseConfig, PlannerConfig, TTSPlanner
 
 
 def test_plain_sentences_paragraphs_and_pauses():
@@ -35,3 +35,16 @@ def test_identity_is_deterministic():
     right = TTSPlanner(config).plan("Hallo.")
     assert left == right
     assert left.plan_id == right.plan_id
+
+
+def test_pause_config_default_is_tts():
+    assert PauseConfig().mode == "tts"
+
+
+def test_pass_a_tokens_counts_tokens_not_language_runs():
+    plan = TTSPlanner(
+        PlannerConfig(language="en-us", document_format="plain", text_preparation="identity")
+    ).plan("One two three.")
+
+    assert plan.document_metadata["planning"]["pass_a_tokens"] == 3
+    assert plan.texts.spoken == "One two three."

@@ -39,6 +39,12 @@ ttsplan compile "Doctor Smith bought 5 kg." --lang en-us
 Without `-o`, the complete plan JSON is written to stdout. This makes the
 result convenient for shell pipelines:
 
+## Defaults and linguistic resources
+
+The default compile policy is `spokenform` for text preparation, `tts` for pause mode, and `spacy off` for linguistic resources. The `spacy off` path uses TTSPlan's deterministic fallback tokenizer and analysis, so the default planner does not require an installed spaCy model.
+
+`--spacy auto` is an explicit opt-in. With a compatible local model, it may provide richer tokenization, POS tags, lemmas, and tags. It is not the default, and TTSPlan does not download models automatically.
+
 ```bash
 ttsplan compile "Hello world." --lang en-us | jq '.segments'
 ```

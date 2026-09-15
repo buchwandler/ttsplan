@@ -4,6 +4,12 @@ TTSPlan ends at a semantic planning boundary. A renderer consumes the public
 plan object and begins G2P after planning. It does not need a JSON round trip
 when planner and renderer run in the same process.
 
+## Planning defaults
+
+TTSPlan's default text-preparation backend is `spokenform`, its default pause mode is `tts`, and the default CLI linguistic-resource policy is `spacy off`. The default path uses deterministic fallback tokenization and analysis and does not depend on an installed spaCy model.
+
+`spacy auto` is an opt-in enrichment policy. When a compatible local model is available, it may expose richer tokenization, POS tags, lemmas, and tags. Consumers should not assume `auto` is enabled, and provider documents remain internal planning state rather than public plan data.
+
 ## Consumer contract
 
 Use these public fields:

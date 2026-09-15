@@ -36,6 +36,12 @@ ttsplan inspect chapter.ttsplan.json --segment 0
 Compile JSON is written to stdout when no output file is supplied. Status
 messages use stderr, and existing output files require `--force`.
 
+## Planning defaults
+
+The minimal CLI defaults are explicit: `spokenform` is the default text-preparation backend, `tts` is the default pause mode, and `spacy off` is the default linguistic-resource policy. With `spacy off`, TTSPlan uses its deterministic fallback tokenizer and analysis and does not depend on an installed spaCy model.
+
+`spacy auto` is opt-in. When enabled and a compatible local model is available, TTSPlan may expose richer tokenization, POS tags, lemmas, and tags; `auto` is not the default.
+
 ## Python API
 
 ```python

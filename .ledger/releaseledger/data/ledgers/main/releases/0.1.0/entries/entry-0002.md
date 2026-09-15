@@ -13,8 +13,8 @@ audience: null
 scopes: []
 source_refs: []
 paths:
-- pyproject.toml
-- ttsplan/py.typed
+  - pyproject.toml
+  - ttsplan/py.typed
 issues: []
 prs: []
 sources: []

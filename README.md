@@ -1,3 +1,8 @@
+[![PyPI - Version](https://img.shields.io/pypi/v/ttsplan)](https://pypi.org/project/ttsplan/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ttsplan)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/ttsplan)
+[![codecov](https://codecov.io/gh/buchwandler/ttsplan/graph/badge.svg?token=cL0qStxvDE)](https://codecov.io/gh/buchwandler/ttsplan)
+
 # ttsplan
 
 TTSPlan is an engine-independent TTS planning compiler and interchange

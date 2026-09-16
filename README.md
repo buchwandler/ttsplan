@@ -36,8 +36,10 @@ The CLI also provides:
 utterplan --version
 utterplan validate chapter.utterplan.json
 utterplan inspect chapter.utterplan.json --segment 0
+utterplan explain chapter.utterplan.json
 ```
 
+`explain` presents the compiled plan as a human-readable speech plan, while `inspect` exposes lower-level diagnostic fields.
 Compile JSON is written to stdout when no output file is supplied. Status
 messages use stderr, and existing output files require `--force`.
 

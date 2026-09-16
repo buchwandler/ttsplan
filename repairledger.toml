@@ -1,9 +1,0 @@
-[ledger]
-code = "rl"
-name = "repairledger"
-
-[project]
-name = "utterplan"
-
-[storage]
-repairledger_dir = ".repairledger"

@@ -51,6 +51,18 @@ utterplan compile chapter.ssmd --lang en-us -o chapter.utterplan.json --json | j
 Argparse usage errors use exit code 2. Input, planning, file, and plan
 validation errors use exit code 1 and are reported without a traceback.
 
+## Explain a plan
+
+Explain an existing compiled plan as a human-readable speech narrative:
+
+```bash
+utterplan explain chapter.utterplan.json
+utterplan explain chapter.utterplan.json --details
+```
+
+The default output shows the prepared wording, render units, ordered segments, languages, resolved pauses, directives, markers, and warnings. Add `--details` for IDs, offsets, provenance, hashes, and plan identity information. Use `inspect` instead when you need raw fields such as tokens, boundaries, or a specific segment.
+
+
 ## Planning controls
 
 - `--unit paragraph|sentence` chooses render-unit grouping.

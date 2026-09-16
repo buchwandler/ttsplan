@@ -8,6 +8,7 @@ from typing import Literal, cast
 from . import PlannerConfig, UtterancePlan, UtterancePlanner, __version__
 from .config import LinguisticsConfig, PauseConfig
 from .exceptions import UtterPlanError
+from .explain import format_explanation
 
 InputFormat = Literal["plain", "ssmd"]
 
@@ -18,6 +19,7 @@ _EXAMPLES = """examples:
   utterplan compile chapter.ssmd --lang en-us -o chapter.utterplan.json
   utterplan validate chapter.utterplan.json
   utterplan inspect chapter.utterplan.json --segment 0
+  utterplan explain chapter.utterplan.json
 """
 
 
@@ -82,6 +84,16 @@ def build_parser() -> argparse.ArgumentParser:
     validate_parser = commands.add_parser("validate", help="validate a saved TTS plan")
     validate_parser.add_argument("input", type=Path)
 
+
+    explain_parser = commands.add_parser(
+        "explain", help="explain a saved TTS plan in human-readable form"
+    )
+    explain_parser.add_argument("input", type=Path)
+    explain_parser.add_argument(
+        "--details",
+        action="store_true",
+        help="include IDs, offsets, provenance, and plan identity details",
+    )
     inspect_parser = commands.add_parser("inspect", help="inspect a saved TTS plan")
     inspect_parser.add_argument("input", type=Path)
     inspect_parser.add_argument("--unit", type=int)
@@ -196,6 +208,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"segments: {len(plan.segments)}")
             print(f"units: {len(plan.units)}")
             print(f"warnings: {len(plan.warnings)}")
+            return 0
+        if args.command == "explain":
+            print(format_explanation(plan, details=args.details), end="")
             return 0
         _inspect(plan, args)
         return 0

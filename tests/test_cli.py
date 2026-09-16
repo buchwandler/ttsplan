@@ -211,3 +211,41 @@ def test_compile_file_and_positional_text_are_mutually_exclusive(
     source.write_text("Hello.", encoding="utf-8")
     assert main(["compile", "extra", "--file", str(source), "--lang", "en-us"]) == 1
     assert "cannot be combined" in capsys.readouterr().err
+
+
+def test_explain_plan(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    output = tmp_path / "plan.utterplan.json"
+    assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(output)]) == 0
+    capsys.readouterr()
+
+    assert main(["explain", str(output)]) == 0
+    captured = capsys.readouterr()
+    assert "UtterPlan explanation" in captured.out
+    assert "Speech plan" in captured.out
+    assert '[en-us] "Hello."' in captured.out
+    assert captured.err == ""
+
+
+def test_explain_details(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    output = tmp_path / "plan.utterplan.json"
+    assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(output)]) == 0
+    capsys.readouterr()
+
+    assert main(["explain", str(output), "--details"]) == 0
+    captured = capsys.readouterr()
+    assert "plan id: sha256:" in captured.out
+    assert "spoken: 0:6" in captured.out
+    assert captured.err == ""
+
+
+def test_explain_invalid_plan_returns_one_without_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    invalid = tmp_path / "invalid.json"
+    invalid.write_text("{}", encoding="utf-8")
+
+    assert main(["explain", str(invalid)]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "format.invalid" in captured.err
+    assert "Traceback" not in captured.err

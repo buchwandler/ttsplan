@@ -11,3 +11,13 @@ If spoken wording is wrong, inspect `texts.spoken` and `preparation`. If languag
 `ttsplan inspect FILE --boundaries --tokens` is intentionally human-readable and does not require a renderer.
 
 For coordinate bugs, compare a structural annotation range with its mapped spoken range and inspect preparation replacement provenance. The exact coordinate map is transient and unavailable after serialization. For pause bugs, distinguish `origin="ssmd"`, `origin="phrasplit"`, and `origin="planner"`, then inspect the contributing event IDs in `pause_before` or `pause_after`. Automatic clause and parenthetical pauses are mode-dependent; explicit SSMD breaks remain explicit, including zero-duration breaks.
+
+If a closing parenthetical pause is missing, verify:
+
+1. `detected_kind == "parenthetical_close"`.
+2. `boundary.position == index(")") + 1` in spoken-text coordinates.
+3. `attrs.anchor == "before"`.
+4. The effective pause mode is `auto`.
+5. The resumed segment's `pause_before` contains that boundary ID.
+
+A detected automatic boundary and an active renderer-facing boundary are distinct. The detected event can remain in `plan.boundaries` for diagnostics even when the active pause policy leaves segmentation and resolved pauses unchanged.

@@ -19,7 +19,7 @@ from .model import (
     TTSPlan,
 )
 from .parsers import PlainDocumentParser, SSMDDocumentParser
-from .pauses import resolve_pauses
+from .pauses import boundary_is_active, resolve_pauses
 from .preparation import IdentityTextPreparer, SourceToSpokenMap, SpokenformTextPreparer
 from .units import make_units
 
@@ -84,7 +84,9 @@ class TTSPlanner:
         tokens = tuple(token for analysis in pass_b for token in analysis.tokens)
         boundaries = list(prepared.boundaries)
         boundaries.extend(_linguistic_boundaries(spoken, runs, config, start_id=len(boundaries)))
-        segments = _segment(spoken, runs, prepared.annotations, boundaries, config, pass_b)
+        segments = _segment(
+            spoken, runs, prepared.annotations, boundaries, config, pause_config, pass_b
+        )
         segments = _attach_membership(segments, tokens, prepared.annotations)
         segments = [resolve_directives(segment, prepared.annotations) for segment in segments]
         boundaries.extend(_derived_boundaries(segments, boundaries, pause_config))
@@ -187,6 +189,7 @@ def _segment(
     annotations: tuple[AnnotationSpan, ...],
     boundaries: list[BoundaryEvent],
     config: PlannerConfig,
+    pause_config: PauseConfig,
     analyses: tuple[Any, ...] = (),
 ) -> list[PlanSegment]:
     if not text:
@@ -207,7 +210,9 @@ def _segment(
             clause = int(getattr(item, "clause_idx", 0) or 0)
             cuts = {start, end}
             cuts.update(
-                boundary.position for boundary in boundaries if start < boundary.position < end
+                boundary.position
+                for boundary in boundaries
+                if start < boundary.position < end and boundary_is_active(boundary, pause_config)
             )
             cuts.update(
                 point
@@ -349,16 +354,26 @@ def _linguistic_boundaries(
         except (AttributeError, OSError, TypeError, ValueError):
             parenthetical_items = []
         for item in parenthetical_items:
+            kind = str(getattr(item, "kind", "parenthetical"))
+            char_start = int(getattr(item, "char_start", 0))
+            char_end = int(getattr(item, "char_end", char_start))
+            if kind == "parenthetical_open":
+                local_position = char_start
+            elif kind == "parenthetical_close":
+                local_position = char_end
+            else:
+                continue
             result.append(
                 BoundaryEvent(
                     f"boundary-{start_id + len(result):06d}",
-                    run.spoken_start + int(getattr(item, "char_start", 0)),
+                    run.spoken_start + local_position,
                     "parenthetical",
                     origin="phrasplit",
                     strength="weak",
                     attrs={
-                        "detected_kind": str(getattr(item, "kind", "parenthetical")),
+                        "detected_kind": kind,
                         "automatic": True,
+                        "anchor": "before",
                     },
                 )
             )

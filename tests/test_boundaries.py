@@ -1,5 +1,23 @@
 from ttsplan import PlannerConfig, TTSPlanner
 
+TEXT = "The backup battery (still warm from the morning test) sat beside the console."
+
+
+def test_medial_parenthetical_boundaries_use_spoken_coordinates_and_anchors():
+    plan = TTSPlanner(PlannerConfig(language="en-us", text_preparation="identity")).plan(TEXT)
+    opening = TEXT.index("(")
+    closing = TEXT.index(")")
+    events = [event for event in plan.boundaries if event.kind == "parenthetical"]
+
+    assert [event.attrs["detected_kind"] for event in events] == [
+        "parenthetical_open",
+        "parenthetical_close",
+    ]
+    assert [event.position for event in events] == [opening, closing + 1]
+    assert all(event.origin == "phrasplit" for event in events)
+    assert all(event.attrs["automatic"] is True for event in events)
+    assert all(event.attrs["anchor"] == "before" for event in events)
+
 
 def test_parenthetical_boundary_keeps_phrasplit_origin():
     plan = TTSPlanner(PlannerConfig(language="en-us")).plan(

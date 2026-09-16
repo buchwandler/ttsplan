@@ -3,6 +3,7 @@ CASES = (
     "Hello ...s world",
     'Hello [Bonjour]{lang="fr"}.',
     "They changed out their clothes (stained with blood).",
+    "The backup battery (still warm from the morning test) sat beside the console.",
     "One sentence. Two sentences.\n\nSecond paragraph.",
     "Hello ...c world",
     "One. @mark Two.",

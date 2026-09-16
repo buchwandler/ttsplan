@@ -6,6 +6,25 @@ from dataclasses import replace
 from .config import PauseConfig
 from .model import BoundaryEvent, PlanSegment, ResolvedPause
 
+_AUTOMATIC_AUTO_MODE_KINDS = frozenset(
+    {
+        "clausal_comma",
+        "parenthetical",
+        "voice_change",
+    }
+)
+
+
+def boundary_is_active(event: BoundaryEvent, config: PauseConfig) -> bool:
+    automatic = bool(event.attrs.get("automatic")) or (
+        event.kind in {"paragraph", "sentence"}
+        and event.seconds is None
+        and event.origin in {"plain", "ssmd", "planner"}
+    )
+    if automatic and not config.enabled:
+        return False
+    return not (automatic and config.mode != "auto" and event.kind in _AUTOMATIC_AUTO_MODE_KINDS)
+
 
 def resolve_pauses(
     segments: list[PlanSegment], boundaries: list[BoundaryEvent], config: PauseConfig
@@ -14,18 +33,7 @@ def resolve_pauses(
     events_after: dict[int, list[BoundaryEvent]] = defaultdict(list)
     events_before: dict[int, list[BoundaryEvent]] = defaultdict(list)
     for event in boundaries:
-        automatic = bool(event.attrs.get("automatic")) or (
-            event.kind in {"paragraph", "sentence"}
-            and event.seconds is None
-            and event.origin in {"plain", "ssmd", "planner"}
-        )
-        if automatic and not config.enabled:
-            continue
-        if (
-            automatic
-            and config.mode != "auto"
-            and event.kind in {"clausal_comma", "parenthetical", "voice_change"}
-        ):
+        if not boundary_is_active(event, config):
             continue
         duration = event.seconds
         if duration is None:

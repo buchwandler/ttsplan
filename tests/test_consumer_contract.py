@@ -83,6 +83,24 @@ def test_automatic_semantic_pauses_are_resolved() -> None:
     assert_public_consumer_contract(plan)
 
 
+def test_medial_parenthetical_consumer_contract_preserves_pause_ownership():
+    text = "The backup battery (still warm from the morning test) sat beside the console."
+    plan = TTSPlanner(
+        PlannerConfig(
+            language="en-us",
+            text_preparation="identity",
+            pauses=PauseConfig(mode="auto"),
+        )
+    ).plan(text)
+
+    assert [segment.text for segment in plan.segments] == [
+        "The backup battery ",
+        "(still warm from the morning test)",
+        " sat beside the console.",
+    ]
+    assert_public_consumer_contract(plan)
+
+
 @pytest.mark.parametrize("unit", ["paragraph", "sentence"])
 def test_markers_and_unit_ownership_are_public(unit: str) -> None:
     plan = TTSPlanner(PlannerConfig(language="en-us", unit=unit, text_preparation="identity")).plan(

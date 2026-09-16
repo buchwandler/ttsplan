@@ -3,13 +3,27 @@
   "boundaries": [
     {
       "attrs": {
+        "anchor": "before",
         "automatic": true,
         "detected_kind": "parenthetical_open"
       },
       "id": "boundary-000000",
       "kind": "parenthetical",
       "origin": "phrasplit",
-      "position": 31,
+      "position": 19,
+      "seconds": null,
+      "strength": "weak"
+    },
+    {
+      "attrs": {
+        "anchor": "before",
+        "automatic": true,
+        "detected_kind": "parenthetical_close"
+      },
+      "id": "boundary-000001",
+      "kind": "parenthetical",
+      "origin": "phrasplit",
+      "position": 53,
       "seconds": null,
       "strength": "weak"
     }
@@ -29,7 +43,7 @@
     "pauses": {
       "clause": 0.3,
       "enabled": true,
-      "mode": "tts",
+      "mode": "auto",
       "paragraph": 1.0,
       "parenthetical": 0.15,
       "sentence": 0.6,
@@ -57,7 +71,7 @@
     "planning": {
       "engine_independent": true,
       "linguistic_passes": 2,
-      "pass_a_tokens": 8
+      "pass_a_tokens": 13
     }
   },
   "format": "ttsplan",
@@ -66,12 +80,12 @@
       "id": "lang-0",
       "language": "en-us",
       "source": "document-default",
-      "spoken_end": 52,
+      "spoken_end": 77,
       "spoken_start": 0
     }
   ],
   "markers": [],
-  "plan_id": "sha256:125e6833de84e5ae1788296dbb0cfc2d7ea2d6a4121c91e13b10c7178e5d9312",
+  "plan_id": "sha256:adfc05375564eee279745a57a141e8a645e95d855d4ec5d4bd25cc9dea4df790",
   "preparation": {
     "backend": "spokenform",
     "languages": ["en-us"],
@@ -81,7 +95,7 @@
   },
   "producer": {
     "name": "ttsplan",
-    "version": "0.0.dev5+gd834970f9.d19800101"
+    "version": "0.0.dev7+g1e0c13a4d.d19800101"
   },
   "schema_version": 1,
   "segments": [
@@ -101,10 +115,10 @@
         "seconds": 0.0
       },
       "sentence": 0,
-      "spoken_end": 31,
+      "spoken_end": 19,
       "spoken_start": 0,
-      "text": "They changed out their clothes ",
-      "token_indices": [0, 1, 2, 3, 4]
+      "text": "The backup battery ",
+      "token_indices": []
     },
     {
       "annotation_ids": [],
@@ -118,99 +132,160 @@
         "seconds": 0.0
       },
       "pause_before": {
+        "events": ["boundary-000000"],
+        "seconds": 0.15
+      },
+      "sentence": 0,
+      "spoken_end": 53,
+      "spoken_start": 19,
+      "text": "(still warm from the morning test)",
+      "token_indices": []
+    },
+    {
+      "annotation_ids": [],
+      "clause": 0,
+      "directives": {},
+      "id": "seg-000002",
+      "language": "en-us",
+      "paragraph": 0,
+      "pause_after": {
         "events": [],
         "seconds": 0.0
       },
+      "pause_before": {
+        "events": ["boundary-000001"],
+        "seconds": 0.15
+      },
       "sentence": 0,
-      "spoken_end": 52,
-      "spoken_start": 31,
-      "text": "(stained with blood).",
-      "token_indices": [5, 6, 7]
+      "spoken_end": 77,
+      "spoken_start": 53,
+      "text": " sat beside the console.",
+      "token_indices": []
     }
   ],
   "source": {
     "format": "plain",
-    "text": "They changed out their clothes (stained with blood)."
+    "text": "The backup battery (still warm from the morning test) sat beside the console."
   },
   "texts": {
-    "spoken": "They changed out their clothes (stained with blood).",
-    "structural": "They changed out their clothes (stained with blood)."
+    "spoken": "The backup battery (still warm from the morning test) sat beside the console.",
+    "structural": "The backup battery (still warm from the morning test) sat beside the console."
   },
   "tokens": [
     {
       "id": "token-0",
       "language": "en-us",
-      "lemma": "they",
-      "spoken_end": 4,
+      "lemma": "the",
+      "spoken_end": 3,
       "spoken_start": 0,
-      "text": "They"
+      "text": "The"
     },
     {
       "id": "token-1",
       "language": "en-us",
-      "lemma": "changed",
-      "spoken_end": 12,
-      "spoken_start": 5,
-      "text": "changed"
+      "lemma": "backup",
+      "spoken_end": 10,
+      "spoken_start": 4,
+      "text": "backup"
     },
     {
       "id": "token-2",
       "language": "en-us",
-      "lemma": "out",
-      "spoken_end": 16,
-      "spoken_start": 13,
-      "text": "out"
+      "lemma": "battery",
+      "spoken_end": 18,
+      "spoken_start": 11,
+      "text": "battery"
     },
     {
       "id": "token-3",
       "language": "en-us",
-      "lemma": "their",
-      "spoken_end": 22,
-      "spoken_start": 17,
-      "text": "their"
+      "lemma": "(still",
+      "spoken_end": 25,
+      "spoken_start": 19,
+      "text": "(still"
     },
     {
       "id": "token-4",
       "language": "en-us",
-      "lemma": "clothes",
+      "lemma": "warm",
       "spoken_end": 30,
-      "spoken_start": 23,
-      "text": "clothes"
+      "spoken_start": 26,
+      "text": "warm"
     },
     {
       "id": "token-5",
       "language": "en-us",
-      "lemma": "(stained",
-      "spoken_end": 39,
+      "lemma": "from",
+      "spoken_end": 35,
       "spoken_start": 31,
-      "text": "(stained"
+      "text": "from"
     },
     {
       "id": "token-6",
       "language": "en-us",
-      "lemma": "with",
-      "spoken_end": 44,
-      "spoken_start": 40,
-      "text": "with"
+      "lemma": "the",
+      "spoken_end": 39,
+      "spoken_start": 36,
+      "text": "the"
     },
     {
       "id": "token-7",
       "language": "en-us",
-      "lemma": "blood).",
-      "spoken_end": 52,
-      "spoken_start": 45,
-      "text": "blood)."
+      "lemma": "morning",
+      "spoken_end": 47,
+      "spoken_start": 40,
+      "text": "morning"
+    },
+    {
+      "id": "token-8",
+      "language": "en-us",
+      "lemma": "test)",
+      "spoken_end": 53,
+      "spoken_start": 48,
+      "text": "test)"
+    },
+    {
+      "id": "token-9",
+      "language": "en-us",
+      "lemma": "sat",
+      "spoken_end": 57,
+      "spoken_start": 54,
+      "text": "sat"
+    },
+    {
+      "id": "token-10",
+      "language": "en-us",
+      "lemma": "beside",
+      "spoken_end": 64,
+      "spoken_start": 58,
+      "text": "beside"
+    },
+    {
+      "id": "token-11",
+      "language": "en-us",
+      "lemma": "the",
+      "spoken_end": 68,
+      "spoken_start": 65,
+      "text": "the"
+    },
+    {
+      "id": "token-12",
+      "language": "en-us",
+      "lemma": "console.",
+      "spoken_end": 77,
+      "spoken_start": 69,
+      "text": "console."
     }
   ],
   "units": [
     {
-      "content_hash": "sha256:0b6f0931119cdd6d2e1e308bf5f98e835a6dcc0e997f722754014b177e1bd5a8",
+      "content_hash": "sha256:6ef37351fc49f9f1ed7af9c905f4f67af26c85323410617304da7acfcd8b773e",
       "id": "unit-0000",
       "index": 0,
       "kind": "paragraph",
       "marker_ids": [],
-      "segment_ids": ["seg-000000", "seg-000001"],
-      "spoken_end": 52,
+      "segment_ids": ["seg-000000", "seg-000001", "seg-000002"],
+      "spoken_end": 77,
       "spoken_start": 0
     }
   ],

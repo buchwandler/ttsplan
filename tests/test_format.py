@@ -42,6 +42,16 @@ def test_semantic_corruption_is_rejected():
         TTSPlan.from_dict(value)
 
 
+def test_compact_optional_fields_are_omitted():
+    value = plan().to_dict()
+    assert value["segments"]
+    assert all("structural_start" not in item for item in value["segments"])
+    assert all("structural_end" not in item for item in value["segments"])
+    assert all(item["directives"] == {} for item in value["segments"])
+    assert all("pos" not in item for item in value["tokens"])
+    assert all("tag" not in item for item in value["tokens"])
+
+
 def test_json_is_plain_data():
     value = json.loads(plan().to_json())
     assert "phonemes" not in json.dumps(value)

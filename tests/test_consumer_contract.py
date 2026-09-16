@@ -12,6 +12,10 @@ def assert_public_consumer_contract(plan: TTSPlan) -> None:
     annotations = {annotation.id: annotation for annotation in plan.annotations}
     markers = {marker.id: marker for marker in plan.markers}
     assert len(segments) == len(plan.segments)
+    preparation = plan.to_dict()["preparation"]
+    assert "offset_map" not in preparation
+    assert "source_text" not in preparation
+    assert "spoken_text" not in preparation
 
     for segment in plan.segments:
         assert segment.text == plan.texts.spoken[segment.spoken_start : segment.spoken_end]

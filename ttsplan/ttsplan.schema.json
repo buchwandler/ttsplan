@@ -77,25 +77,15 @@
     },
     "preparation": {
       "type": "object",
-      "required": [
-        "backend",
-        "source_text",
-        "spoken_text",
-        "languages",
-        "replacements",
-        "warnings"
-      ],
+      "required": ["backend", "languages", "replacements", "warnings"],
       "properties": {
         "backend": { "type": "string" },
         "version": { "type": ["string", "null"] },
-        "source_text": { "type": "string" },
-        "spoken_text": { "type": "string" },
         "languages": { "type": "array", "items": { "type": "string" } },
         "replacements": { "type": "array", "items": { "type": "object" } },
-        "offset_map": { "type": ["object", "null"] },
         "warnings": { "type": "array", "items": { "type": "string" } }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "range": { "type": "integer", "minimum": 0 },
     "language": {
@@ -148,15 +138,7 @@
     },
     "token": {
       "type": "object",
-      "required": [
-        "spoken_start",
-        "spoken_end",
-        "text",
-        "pos",
-        "tag",
-        "lemma",
-        "language"
-      ],
+      "required": ["spoken_start", "spoken_end", "text"],
       "properties": {
         "id": { "type": "string" },
         "spoken_start": { "$ref": "#/$defs/range" },

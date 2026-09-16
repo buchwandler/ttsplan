@@ -31,6 +31,8 @@ Use these public fields:
   voice bindings.
 
 All segment ranges and renderer-facing ranges are spoken-text coordinates.
+
+Preparation provenance is diagnostic metadata for consumers. Do not depend on a serialized coordinate map. All structural-to-spoken conversion has already been resolved by the planner.
 Voice bindings are logical names, not backend voice IDs. Consumers must not
 recompute pause policy, resolve engine voices in TTSPlan, or depend on provider
 documents that were used during planning.

@@ -2,11 +2,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
-from typing import Any
+from typing import Any, Protocol
 
 from .exceptions import TextPreparationError
 from .language import LanguageRun
 from .model import AnnotationSpan, BoundaryEvent, TextPreparationInfo
+
+
+class SourceToSpokenMap(Protocol):
+    source_length: int
+    output_length: int
+
+    def map_source_span(self, start: int, end: int) -> tuple[int, int]: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,6 +22,7 @@ class PreparedText:
     info: TextPreparationInfo
     annotations: tuple[AnnotationSpan, ...]
     boundaries: tuple[BoundaryEvent, ...]
+    source_map: SourceToSpokenMap
 
 
 class SpokenformTextPreparer:
@@ -55,7 +63,7 @@ class SpokenformTextPreparer:
                     kwargs["nlp"] = analyses[run_index].provider_doc
                 prepared_runs.append(spokenform.prepare(local_text, **kwargs))
             spoken = "".join(str(item.spoken_text) for item in prepared_runs)
-            offset = _compose_offsets(text, prepared_runs)
+            source_map = _compose_offsets(text, prepared_runs)
             replacements: list[dict[str, Any]] = []
             warnings: list[str] = []
             output_offset = 0
@@ -80,20 +88,17 @@ class SpokenformTextPreparer:
         except (ImportError, ValueError, TypeError) as exc:
             raise TextPreparationError(str(exc)) from exc
         mapped_annotations = tuple(
-            _map_annotation(annotation, offset) for annotation in annotations
+            _map_annotation(annotation, source_map) for annotation in annotations
         )
-        mapped_boundaries = tuple(_map_boundary(boundary, offset) for boundary in boundaries)
+        mapped_boundaries = tuple(_map_boundary(boundary, source_map) for boundary in boundaries)
         info = TextPreparationInfo(
-            "spokenform",
-            ver,
-            text,
-            spoken,
-            tuple(run.language for run in runs),
-            tuple(replacements),
-            offset.to_dict(),
-            tuple(warnings),
+            backend="spokenform",
+            version=ver,
+            languages=tuple(run.language for run in runs),
+            replacements=tuple(replacements),
+            warnings=tuple(warnings),
         )
-        return PreparedText(spoken, info, mapped_annotations, mapped_boundaries)
+        return PreparedText(spoken, info, mapped_annotations, mapped_boundaries, source_map)
 
 
 class IdentityTextPreparer:
@@ -106,26 +111,22 @@ class IdentityTextPreparer:
         boundaries: tuple[BoundaryEvent, ...] = (),
         analyses: tuple[Any, ...] = (),
     ) -> PreparedText:
-        offset = _IdentityOffsetMap(len(text))
+        source_map = _IdentitySourceMap(len(text))
         info = TextPreparationInfo(
-            "identity",
-            None,
-            text,
-            text,
-            tuple(run.language for run in runs),
-            (),
-            offset.to_dict(),
-            (),
+            backend="identity",
+            version=None,
+            languages=tuple(run.language for run in runs),
         )
         return PreparedText(
             text,
             info,
-            tuple(_map_annotation(annotation, offset) for annotation in annotations),
-            tuple(_map_boundary(boundary, offset) for boundary in boundaries),
+            tuple(_map_annotation(annotation, source_map) for annotation in annotations),
+            tuple(_map_boundary(boundary, source_map) for boundary in boundaries),
+            source_map,
         )
 
 
-class _IdentityOffsetMap:
+class _IdentitySourceMap:
     def __init__(self, length: int) -> None:
         self.source_length = length
         self.output_length = length
@@ -133,86 +134,48 @@ class _IdentityOffsetMap:
     def map_source_span(self, start: int, end: int) -> tuple[int, int]:
         return start, end
 
-    def to_dict(self) -> dict[str, Any]:
-        values = list(range(self.source_length + 1))
-        return {
-            "source_length": self.source_length,
-            "output_length": self.output_length,
-            "source_left": values,
-            "source_right": values,
-            "output_left": values,
-            "output_right": values,
-            "edits": [],
-        }
 
-
-class _CompositeOffsetMap:
+class _CompositeSourceMap:
     def __init__(
         self,
         source_length: int,
         output_length: int,
         source_left: list[int],
         source_right: list[int],
-        output_left: list[int],
-        output_right: list[int],
-        edits: list[dict[str, Any]],
     ) -> None:
         self.source_length = source_length
         self.output_length = output_length
         self.source_left = source_left
         self.source_right = source_right
-        self.output_left = output_left
-        self.output_right = output_right
-        self.edits = edits
 
     def map_source_span(self, start: int, end: int) -> tuple[int, int]:
         start = max(0, min(self.source_length, start))
         end = max(start, min(self.source_length, end))
         return self.source_left[start], self.source_right[end]
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "source_length": self.source_length,
-            "output_length": self.output_length,
-            "source_left": self.source_left,
-            "source_right": self.source_right,
-            "output_left": self.output_left,
-            "output_right": self.output_right,
-            "edits": self.edits,
-        }
 
-
-def _compose_offsets(text: str, prepared_runs: list[Any]) -> _CompositeOffsetMap:
+def _compose_offsets(text: str, prepared_runs: list[Any]) -> SourceToSpokenMap:
     if not prepared_runs:
-        return _IdentityOffsetMap(len(text))  # type: ignore[return-value]
+        return _IdentitySourceMap(len(text))
+
     source_left: list[int] = []
     source_right: list[int] = []
-    output_left: list[int] = []
-    output_right: list[int] = []
-    edits: list[dict[str, Any]] = []
-    source_offset = output_offset = 0
+    source_length = output_length = 0
     for item in prepared_runs:
         offset = getattr(item, "offset_map", None)
         if offset is None:
             raise TextPreparationError("spokenform did not provide an offset map")
         local_left = list(offset.source_left)
         local_right = list(offset.source_right)
-        local_output_left = list(offset.output_left)
-        local_output_right = list(offset.output_right)
         if not source_left:
-            source_left.extend(value + output_offset for value in local_left)
-            source_right.extend(value + output_offset for value in local_right)
+            source_left.extend(value + output_length for value in local_left)
+            source_right.extend(value + output_length for value in local_right)
         else:
-            source_left.extend(value + output_offset for value in local_left[1:])
-            source_right.extend(value + output_offset for value in local_right[1:])
-        output_left.extend(value + source_offset for value in local_output_left)
-        output_right.extend(value + source_offset for value in local_output_right)
-        edits.extend(_replacement_dict(edit) for edit in getattr(offset, "edits", ()))
-        source_offset += int(offset.source_length)
-        output_offset += int(offset.output_length)
-    return _CompositeOffsetMap(
-        source_offset, output_offset, source_left, source_right, output_left, output_right, edits
-    )
+            source_left.extend(value + output_length for value in local_left[1:])
+            source_right.extend(value + output_length for value in local_right[1:])
+        source_length += int(offset.source_length)
+        output_length += int(offset.output_length)
+    return _CompositeSourceMap(source_length, output_length, source_left, source_right)
 
 
 def _replacement_dict(item: Any) -> dict[str, Any]:
@@ -233,8 +196,8 @@ def _replacement_dict(item: Any) -> dict[str, Any]:
     }
 
 
-def _map_annotation(annotation: AnnotationSpan, offset_map: Any) -> AnnotationSpan:
-    spoken_start, spoken_end = offset_map.map_source_span(
+def _map_annotation(annotation: AnnotationSpan, source_map: SourceToSpokenMap) -> AnnotationSpan:
+    spoken_start, spoken_end = source_map.map_source_span(
         annotation.structural_start, annotation.structural_end
     )
     return AnnotationSpan(
@@ -248,8 +211,8 @@ def _map_annotation(annotation: AnnotationSpan, offset_map: Any) -> AnnotationSp
     )
 
 
-def _map_boundary(boundary: BoundaryEvent, offset_map: Any) -> BoundaryEvent:
-    position, _ = offset_map.map_source_span(boundary.position, boundary.position)
+def _map_boundary(boundary: BoundaryEvent, source_map: SourceToSpokenMap) -> BoundaryEvent:
+    position, _ = source_map.map_source_span(boundary.position, boundary.position)
     return BoundaryEvent(
         boundary.id,
         position,

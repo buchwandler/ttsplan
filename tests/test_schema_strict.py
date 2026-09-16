@@ -19,3 +19,10 @@ def test_nested_text_types_are_not_coerced():
     value["texts"]["spoken"] = 123
     with pytest.raises(PlanFormatError, match="field.type"):
         TTSPlan.from_dict(value)
+
+
+def test_unknown_preparation_key_is_rejected():
+    value = TTSPlanner(PlannerConfig(language="en-us")).plan("Hello.").to_dict()
+    value["preparation"]["unexpected"] = True
+    with pytest.raises(PlanFormatError, match="preparation"):
+        TTSPlan.from_dict(value)

@@ -191,6 +191,19 @@ def test_inspect_segment(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> 
     assert "Hello" in captured.out
 
 
+def test_inspect_preparation(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    output = tmp_path / "plan.ttsplan.json"
+    assert main(["compile", "Dr. bought 5 kg.", "--lang", "en-us", "-o", str(output)]) == 0
+    capsys.readouterr()
+    assert main(["inspect", str(output), "--preparation"]) == 0
+    captured = capsys.readouterr()
+    assert "Preparation" in captured.out
+    assert "backend: spokenform" in captured.out
+    assert "replacements: 2" in captured.out
+    assert "Dr." in captured.out
+    assert "Doctor" in captured.out
+
+
 def test_compile_file_and_positional_text_are_mutually_exclusive(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

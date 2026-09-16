@@ -48,11 +48,8 @@ class PlanTexts:
 class TextPreparationInfo:
     backend: str
     version: str | None
-    source_text: str
-    spoken_text: str
     languages: tuple[str, ...] = ()
     replacements: tuple[Mapping[str, Any], ...] = ()
-    offset_map: Mapping[str, Any] | None = None
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
@@ -60,11 +57,8 @@ class TextPreparationInfo:
             {
                 "backend": self.backend,
                 "version": self.version,
-                "source_text": self.source_text,
-                "spoken_text": self.spoken_text,
                 "languages": self.languages,
                 "replacements": self.replacements,
-                "offset_map": self.offset_map,
                 "warnings": self.warnings,
             }
         )
@@ -126,11 +120,15 @@ class TokenAnnotation:
             "spoken_start": self.spoken_start,
             "spoken_end": self.spoken_end,
             "text": self.text,
-            "pos": self.pos,
-            "tag": self.tag,
-            "lemma": self.lemma,
-            "language": self.language,
         }
+        for key, value in (
+            ("pos", self.pos),
+            ("tag", self.tag),
+            ("lemma", self.lemma),
+            ("language", self.language),
+        ):
+            if value is not None:
+                result[key] = value
         if self.id is not None:
             result["id"] = self.id
         return result
@@ -249,13 +247,17 @@ class SegmentDirectives:
     audio: AudioDirective | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "voice": _plain(self.voice),
-            "pronunciation": _plain(self.pronunciation),
-            "prosody": _plain(self.prosody),
-            "emphasis": _plain(self.emphasis),
-            "audio": _plain(self.audio),
-        }
+        result: dict[str, Any] = {}
+        for key, value in (
+            ("voice", self.voice),
+            ("pronunciation", self.pronunciation),
+            ("prosody", self.prosody),
+            ("emphasis", self.emphasis),
+            ("audio", self.audio),
+        ):
+            if value is not None:
+                result[key] = _plain(value)
+        return result
 
 
 @dataclass(frozen=True, slots=True)
@@ -310,14 +312,16 @@ class PlanSegment:
             "paragraph": self.paragraph,
             "sentence": self.sentence,
             "clause": self.clause,
-            "structural_start": self.structural_start,
-            "structural_end": self.structural_end,
             "pause_before": self.pause_before.to_dict(),
             "pause_after": self.pause_after.to_dict(),
             "directives": self.directives.to_dict(),
             "token_indices": list(self.token_indices),
             "annotation_ids": list(self.annotation_ids),
         }
+        if self.structural_start is not None:
+            result["structural_start"] = self.structural_start
+        if self.structural_end is not None:
+            result["structural_end"] = self.structural_end
         return result
 
 
@@ -528,8 +532,16 @@ def _check_nested_types(data: Mapping[str, Any]) -> None:
     _expect(texts.get("structural"), str, "$.texts.structural")
     _expect(texts.get("spoken"), str, "$.texts.spoken")
     preparation = _expect(data.get("preparation"), Mapping, "$.preparation")
-    for key in ("backend", "source_text", "spoken_text"):
-        _expect(preparation.get(key), str, f"$.preparation.{key}")
+    unknown = set(preparation) - {"backend", "version", "languages", "replacements", "warnings"}
+    if unknown:
+        raise PlanFormatError(
+            f"unknown preparation fields: {sorted(unknown)}",
+            code="field.unknown",
+            path="$.preparation",
+        )
+    _expect(preparation.get("backend"), str, "$.preparation.backend")
+    if preparation.get("version") is not None:
+        _expect(preparation.get("version"), str, "$.preparation.version")
     for key in ("languages", "replacements", "warnings"):
         _expect(preparation.get(key), list, f"$.preparation.{key}")
     for key in (
@@ -643,14 +655,11 @@ def _from_dict(data: Mapping[str, Any]) -> TTSPlan:
         config=dict(data["config"]),
         texts=PlanTexts(str(texts["structural"]), str(texts["spoken"])),
         preparation=TextPreparationInfo(
-            str(prep.get("backend", "identity")),
-            prep.get("version"),
-            str(prep.get("source_text", texts["structural"])),
-            str(prep.get("spoken_text", texts["spoken"])),
-            tuple(prep.get("languages", ())),
-            tuple(prep.get("replacements", ())),
-            prep.get("offset_map"),
-            tuple(prep.get("warnings", ())),
+            backend=str(prep["backend"]),
+            version=prep.get("version"),
+            languages=tuple(prep["languages"]),
+            replacements=tuple(prep["replacements"]),
+            warnings=tuple(prep["warnings"]),
         ),
         languages=tuple(
             LanguageRun(

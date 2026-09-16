@@ -73,4 +73,7 @@ ttsplan --version
 ttsplan validate chapter.ttsplan.json
 ttsplan inspect chapter.ttsplan.json --segment 0
 ttsplan inspect chapter.ttsplan.json --unit 0 --boundaries --tokens
+ttsplan inspect chapter.ttsplan.json --preparation
 ```
+
+`inspect --preparation` reports the preparation backend and version, structural and spoken text lengths, replacement count, and each replacement's structural and spoken ranges and text. This is the supported human-facing preparation diagnostic; raw coordinate lookup tables are intentionally absent from plan JSON.

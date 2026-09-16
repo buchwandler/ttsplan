@@ -54,10 +54,12 @@
     "overlap_mode": "snap",
     "pauses": {
       "clause": 0.3,
+      "enabled": true,
       "mode": "tts",
       "paragraph": 1.0,
       "parenthetical": 0.15,
       "sentence": 0.6,
+      "voice_change": 0.15,
       "weak": 0.15
     },
     "ssmd": {
@@ -82,7 +84,7 @@
     "planning": {
       "engine_independent": true,
       "linguistic_passes": 2,
-      "pass_a_tokens": 1
+      "pass_a_tokens": 3
     }
   },
   "format": "ttsplan",
@@ -96,49 +98,24 @@
     }
   ],
   "markers": [],
-  "plan_id": "sha256:fdedaeca3a172e16a77e4069c2615780e21681e4e0cb86163ebdf6cf5386e3d7",
+  "plan_id": "sha256:19114ed2c2610c2a72c80c1fb66e0b296bdcb3dee175e9ac103a575ee1823c01",
   "preparation": {
     "backend": "spokenform",
     "languages": ["en-us"],
-    "offset_map": {
-      "edits": [],
-      "output_left": [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
-      ],
-      "output_length": 18,
-      "output_right": [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
-      ],
-      "source_left": [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
-      ],
-      "source_length": 18,
-      "source_right": [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
-      ]
-    },
     "replacements": [],
-    "source_text": "Hello world again.",
-    "spoken_text": "Hello world again.",
-    "version": "0.4.2",
+    "version": "0.4.4.dev0+g71feb9cb4.d19800101",
     "warnings": []
   },
   "producer": {
     "name": "ttsplan",
-    "version": "0.1.0"
+    "version": "0.0.dev5+gd834970f9.d19800101"
   },
   "schema_version": 1,
   "segments": [
     {
       "annotation_ids": ["annotation-000000"],
       "clause": 0,
-      "directives": {
-        "audio": null,
-        "emphasis": null,
-        "pronunciation": null,
-        "prosody": null,
-        "voice": null
-      },
+      "directives": {},
       "id": "seg-000000",
       "language": "en-us",
       "paragraph": 0,
@@ -153,21 +130,13 @@
       "sentence": 0,
       "spoken_end": 5,
       "spoken_start": 0,
-      "structural_end": null,
-      "structural_start": null,
       "text": "Hello",
       "token_indices": [0]
     },
     {
       "annotation_ids": ["annotation-000000"],
       "clause": 0,
-      "directives": {
-        "audio": null,
-        "emphasis": null,
-        "pronunciation": null,
-        "prosody": null,
-        "voice": null
-      },
+      "directives": {},
       "id": "seg-000001",
       "language": "en-us",
       "paragraph": 0,
@@ -182,21 +151,13 @@
       "sentence": 0,
       "spoken_end": 11,
       "spoken_start": 5,
-      "structural_end": null,
-      "structural_start": null,
       "text": " world",
       "token_indices": [1]
     },
     {
       "annotation_ids": ["annotation-000000"],
       "clause": 0,
-      "directives": {
-        "audio": null,
-        "emphasis": null,
-        "pronunciation": null,
-        "prosody": null,
-        "voice": null
-      },
+      "directives": {},
       "id": "seg-000002",
       "language": "en-us",
       "paragraph": 0,
@@ -211,8 +172,6 @@
       "sentence": 0,
       "spoken_end": 18,
       "spoken_start": 11,
-      "structural_end": null,
-      "structural_start": null,
       "text": " again.",
       "token_indices": [2]
     }
@@ -230,36 +189,30 @@
       "id": "token-0",
       "language": "en-us",
       "lemma": "hello",
-      "pos": null,
       "spoken_end": 5,
       "spoken_start": 0,
-      "tag": null,
       "text": "Hello"
     },
     {
       "id": "token-1",
       "language": "en-us",
       "lemma": "world",
-      "pos": null,
       "spoken_end": 11,
       "spoken_start": 6,
-      "tag": null,
       "text": "world"
     },
     {
       "id": "token-2",
       "language": "en-us",
       "lemma": "again.",
-      "pos": null,
       "spoken_end": 18,
       "spoken_start": 12,
-      "tag": null,
       "text": "again."
     }
   ],
   "units": [
     {
-      "content_hash": "sha256:1d9afe298f8d2ffd25de8be8f3c120be1eb92e44b64c942ec0405731ba75f2fb",
+      "content_hash": "sha256:11a62e203b120d707be79fc1b3fc6f4b6616973fa8d883d55ccadf92d026c9f1",
       "id": "unit-0000",
       "index": 0,
       "kind": "paragraph",

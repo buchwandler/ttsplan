@@ -39,10 +39,12 @@
     "overlap_mode": "snap",
     "pauses": {
       "clause": 0.3,
+      "enabled": true,
       "mode": "tts",
       "paragraph": 1.0,
       "parenthetical": 0.15,
       "sentence": 0.6,
+      "voice_change": 0.15,
       "weak": 0.15
     },
     "ssmd": {
@@ -67,7 +69,7 @@
     "planning": {
       "engine_independent": true,
       "linguistic_passes": 2,
-      "pass_a_tokens": 1
+      "pass_a_tokens": 2
     }
   },
   "format": "ttsplan",
@@ -90,41 +92,24 @@
       "spoken_position": 4
     }
   ],
-  "plan_id": "sha256:ad231d2482500e500eae2393b857777b6acd0c06d863b7e15a347eb7a38fd597",
+  "plan_id": "sha256:1e0cc276919e547dca944768d52c78ecf340c6c95bd60ba2fa5fb0eefc31826b",
   "preparation": {
     "backend": "spokenform",
     "languages": ["en-us"],
-    "offset_map": {
-      "edits": [],
-      "output_left": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-      "output_length": 9,
-      "output_right": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-      "source_left": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-      "source_length": 9,
-      "source_right": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    },
     "replacements": [],
-    "source_text": "One. Two.",
-    "spoken_text": "One. Two.",
-    "version": "0.4.2",
+    "version": "0.4.4.dev0+g71feb9cb4.d19800101",
     "warnings": []
   },
   "producer": {
     "name": "ttsplan",
-    "version": "0.1.0"
+    "version": "0.0.dev5+gd834970f9.d19800101"
   },
   "schema_version": 1,
   "segments": [
     {
       "annotation_ids": ["annotation-000000"],
       "clause": 0,
-      "directives": {
-        "audio": null,
-        "emphasis": null,
-        "pronunciation": null,
-        "prosody": null,
-        "voice": null
-      },
+      "directives": {},
       "id": "seg-000000",
       "language": "en-us",
       "paragraph": 0,
@@ -139,21 +124,13 @@
       "sentence": 0,
       "spoken_end": 4,
       "spoken_start": 0,
-      "structural_end": null,
-      "structural_start": null,
       "text": "One.",
       "token_indices": [0]
     },
     {
       "annotation_ids": ["annotation-000000"],
       "clause": 0,
-      "directives": {
-        "audio": null,
-        "emphasis": null,
-        "pronunciation": null,
-        "prosody": null,
-        "voice": null
-      },
+      "directives": {},
       "id": "seg-000001",
       "language": "en-us",
       "paragraph": 0,
@@ -168,8 +145,6 @@
       "sentence": 1,
       "spoken_end": 9,
       "spoken_start": 5,
-      "structural_end": null,
-      "structural_start": null,
       "text": "Two.",
       "token_indices": [1]
     }
@@ -187,26 +162,22 @@
       "id": "token-0",
       "language": "en-us",
       "lemma": "one.",
-      "pos": null,
       "spoken_end": 4,
       "spoken_start": 0,
-      "tag": null,
       "text": "One."
     },
     {
       "id": "token-1",
       "language": "en-us",
       "lemma": "two.",
-      "pos": null,
       "spoken_end": 9,
       "spoken_start": 5,
-      "tag": null,
       "text": "Two."
     }
   ],
   "units": [
     {
-      "content_hash": "sha256:6765b2535dfb614dbdb39db057b59b006676011d9d5343e59ad5258eca43f2f9",
+      "content_hash": "sha256:441750ab70db7c3651816472d8e0f71fecfe7e6a7c4141e0978cb20dc5d64289",
       "id": "unit-0000",
       "index": 0,
       "kind": "sentence",
@@ -216,7 +187,7 @@
       "spoken_start": 0
     },
     {
-      "content_hash": "sha256:07ceed2b1a244583ec69cf84f92bcb84600aa26f563916e515a5124b04a415a3",
+      "content_hash": "sha256:6e4541f760f57f8920269d547c0a58dca30dee5d5a3770f42899b31f5c83e425",
       "id": "unit-0001",
       "index": 1,
       "kind": "sentence",

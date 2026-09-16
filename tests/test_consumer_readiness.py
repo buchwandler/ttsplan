@@ -120,4 +120,5 @@ def test_voice_bindings_and_segment_logical_voice_remain_separate() -> None:
     assert plan.document_metadata["voice_bindings"] == {"narrator": "voice-a"}
     assert plan.segments[0].directives.voice.reference == "narrator"
     assert plan.segments[0].directives.voice.reference != "voice-a"
+    assert "offset_map" not in plan.to_dict()["preparation"]
     assert plan == type(plan).from_json(plan.to_json())

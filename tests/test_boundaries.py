@@ -21,3 +21,10 @@ def test_explicit_ssmd_boundary_keeps_ssmd_origin():
     event = next(event for event in plan.boundaries if event.kind == "explicit")
     assert event.origin == "ssmd"
     assert event.attrs["anchor"] == "after"
+
+
+def test_derived_paragraph_boundary_does_not_duplicate_existing_event():
+    plan = TTSPlanner(PlannerConfig(language="en-us")).plan("One paragraph.\n\nTwo paragraph.")
+    keys = [(event.position, event.kind) for event in plan.boundaries]
+    assert len(keys) == len(set(keys))
+    assert [(event.position, event.kind) for event in plan.boundaries] == [(14, "paragraph")]

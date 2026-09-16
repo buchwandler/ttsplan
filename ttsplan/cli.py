@@ -89,6 +89,7 @@ def build_parser() -> argparse.ArgumentParser:
     inspect_parser.add_argument("--warnings", action="store_true")
     inspect_parser.add_argument("--boundaries", action="store_true")
     inspect_parser.add_argument("--tokens", action="store_true")
+    inspect_parser.add_argument("--preparation", action="store_true")
     return parser
 
 
@@ -219,6 +220,26 @@ def _inspect(plan: TTSPlan, args: argparse.Namespace) -> None:
     if args.warnings:
         for warning in plan.warnings:
             print(f"warning: {warning}")
+    if args.preparation:
+        preparation = plan.preparation
+        version = f" {preparation.version}" if preparation.version else ""
+        print("\nPreparation")
+        print(f"  backend: {preparation.backend}{version}")
+        print(f"  source: {len(plan.texts.structural)} characters")
+        print(f"  spoken: {len(plan.texts.spoken)} characters")
+        print(f"  replacements: {len(preparation.replacements)}")
+        for replacement in preparation.replacements:
+            source_range = (
+                f"{replacement.get('source_start', 0)}:{replacement.get('source_end', 0)}"
+            )
+            output_range = (
+                f"{replacement.get('output_start', 0)}:{replacement.get('output_end', 0)}"
+            )
+            label = replacement.get("rule") or replacement.get("kind", "")
+            print(f"  {source_range} -> {output_range} {label}")
+            print(
+                f"    {replacement.get('source', '')!r} -> {replacement.get('replacement', '')!r}"
+            )
     if args.boundaries:
         print("\nBoundaries")
         for boundary in plan.boundaries:

@@ -28,10 +28,12 @@
     "overlap_mode": "snap",
     "pauses": {
       "clause": 0.3,
+      "enabled": true,
       "mode": "tts",
       "paragraph": 1.0,
       "parenthetical": 0.15,
       "sentence": 0.6,
+      "voice_change": 0.15,
       "weak": 0.15
     },
     "ssmd": {
@@ -55,7 +57,7 @@
     "planning": {
       "engine_independent": true,
       "linguistic_passes": 2,
-      "pass_a_tokens": 1
+      "pass_a_tokens": 8
     }
   },
   "format": "ttsplan",
@@ -69,57 +71,24 @@
     }
   ],
   "markers": [],
-  "plan_id": "sha256:91e543bebbadccb0da35627d6a193d5ffaa1ad805f52930c6880a42367c9a7cb",
+  "plan_id": "sha256:125e6833de84e5ae1788296dbb0cfc2d7ea2d6a4121c91e13b10c7178e5d9312",
   "preparation": {
     "backend": "spokenform",
     "languages": ["en-us"],
-    "offset_map": {
-      "edits": [],
-      "output_left": [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-        20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
-        38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52
-      ],
-      "output_length": 52,
-      "output_right": [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-        20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
-        38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52
-      ],
-      "source_left": [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-        20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
-        38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52
-      ],
-      "source_length": 52,
-      "source_right": [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-        20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
-        38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52
-      ]
-    },
     "replacements": [],
-    "source_text": "They changed out their clothes (stained with blood).",
-    "spoken_text": "They changed out their clothes (stained with blood).",
-    "version": "0.4.2",
+    "version": "0.4.4.dev0+g71feb9cb4.d19800101",
     "warnings": []
   },
   "producer": {
     "name": "ttsplan",
-    "version": "0.1.0"
+    "version": "0.0.dev5+gd834970f9.d19800101"
   },
   "schema_version": 1,
   "segments": [
     {
       "annotation_ids": [],
       "clause": 0,
-      "directives": {
-        "audio": null,
-        "emphasis": null,
-        "pronunciation": null,
-        "prosody": null,
-        "voice": null
-      },
+      "directives": {},
       "id": "seg-000000",
       "language": "en-us",
       "paragraph": 0,
@@ -134,21 +103,13 @@
       "sentence": 0,
       "spoken_end": 31,
       "spoken_start": 0,
-      "structural_end": null,
-      "structural_start": null,
       "text": "They changed out their clothes ",
       "token_indices": [0, 1, 2, 3, 4]
     },
     {
       "annotation_ids": [],
       "clause": 0,
-      "directives": {
-        "audio": null,
-        "emphasis": null,
-        "pronunciation": null,
-        "prosody": null,
-        "voice": null
-      },
+      "directives": {},
       "id": "seg-000001",
       "language": "en-us",
       "paragraph": 0,
@@ -163,8 +124,6 @@
       "sentence": 0,
       "spoken_end": 52,
       "spoken_start": 31,
-      "structural_end": null,
-      "structural_start": null,
       "text": "(stained with blood).",
       "token_indices": [5, 6, 7]
     }
@@ -182,86 +141,70 @@
       "id": "token-0",
       "language": "en-us",
       "lemma": "they",
-      "pos": null,
       "spoken_end": 4,
       "spoken_start": 0,
-      "tag": null,
       "text": "They"
     },
     {
       "id": "token-1",
       "language": "en-us",
       "lemma": "changed",
-      "pos": null,
       "spoken_end": 12,
       "spoken_start": 5,
-      "tag": null,
       "text": "changed"
     },
     {
       "id": "token-2",
       "language": "en-us",
       "lemma": "out",
-      "pos": null,
       "spoken_end": 16,
       "spoken_start": 13,
-      "tag": null,
       "text": "out"
     },
     {
       "id": "token-3",
       "language": "en-us",
       "lemma": "their",
-      "pos": null,
       "spoken_end": 22,
       "spoken_start": 17,
-      "tag": null,
       "text": "their"
     },
     {
       "id": "token-4",
       "language": "en-us",
       "lemma": "clothes",
-      "pos": null,
       "spoken_end": 30,
       "spoken_start": 23,
-      "tag": null,
       "text": "clothes"
     },
     {
       "id": "token-5",
       "language": "en-us",
       "lemma": "(stained",
-      "pos": null,
       "spoken_end": 39,
       "spoken_start": 31,
-      "tag": null,
       "text": "(stained"
     },
     {
       "id": "token-6",
       "language": "en-us",
       "lemma": "with",
-      "pos": null,
       "spoken_end": 44,
       "spoken_start": 40,
-      "tag": null,
       "text": "with"
     },
     {
       "id": "token-7",
       "language": "en-us",
       "lemma": "blood).",
-      "pos": null,
       "spoken_end": 52,
       "spoken_start": 45,
-      "tag": null,
       "text": "blood)."
     }
   ],
   "units": [
     {
-      "content_hash": "sha256:b8ce87922c5968f3d6513f5622f0abeab66fbd87c3c2ff8e41850444f811881d",
+      "content_hash": "sha256:0b6f0931119cdd6d2e1e308bf5f98e835a6dcc0e997f722754014b177e1bd5a8",
       "id": "unit-0000",
       "index": 0,
       "kind": "paragraph",

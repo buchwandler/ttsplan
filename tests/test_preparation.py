@@ -10,7 +10,19 @@ def test_multilingual_preparation_composes_run_offsets():
         ("en-us", 13, 14),
     ]
     assert plan.preparation.languages == ("en-us", "fr", "en-us")
-    assert plan.preparation.offset_map["source_length"] == len(plan.texts.structural)
+    payload = plan.to_dict()
+    assert "offset_map" not in payload["preparation"]
+    assert "source_text" not in payload["preparation"]
+    assert "spoken_text" not in payload["preparation"]
+    for replacement in plan.preparation.replacements:
+        assert (
+            plan.texts.structural[replacement["source_start"] : replacement["source_end"]]
+            == replacement["source"]
+        )
+        assert (
+            plan.texts.spoken[replacement["output_start"] : replacement["output_end"]]
+            == replacement["replacement"]
+        )
 
 
 def test_pronunciation_annotation_is_protected_and_resolved():

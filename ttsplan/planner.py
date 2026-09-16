@@ -20,7 +20,7 @@ from .model import (
 )
 from .parsers import PlainDocumentParser, SSMDDocumentParser
 from .pauses import resolve_pauses
-from .preparation import IdentityTextPreparer, SpokenformTextPreparer
+from .preparation import IdentityTextPreparer, SourceToSpokenMap, SpokenformTextPreparer
 from .units import make_units
 
 
@@ -89,10 +89,7 @@ class TTSPlanner:
         segments = [resolve_directives(segment, prepared.annotations) for segment in segments]
         boundaries.extend(_derived_boundaries(segments, boundaries, pause_config))
         segments = resolve_pauses(segments, boundaries, pause_config)
-        markers = tuple(
-            _map_marker(marker, prepared.info.offset_map, len(parsed.structural_text), len(spoken))
-            for marker in parsed.markers
-        )
+        markers = tuple(_map_marker(marker, prepared.source_map) for marker in parsed.markers)
         segment_tuple = tuple(segments)
         units = make_units(segment_tuple, markers, selected_unit)
         metadata = dict(parsed.metadata)
@@ -372,6 +369,11 @@ def _derived_boundaries(
     segments: list[PlanSegment], existing: list[BoundaryEvent], config: PauseConfig
 ) -> list[BoundaryEvent]:
     result: list[BoundaryEvent] = []
+    existing_keys = {
+        (event.position, event.kind)
+        for event in existing
+        if event.kind in {"paragraph", "sentence"}
+    }
     next_id = len(existing)
     for previous, current in zip(segments, segments[1:], strict=False):
         kind: str | None = None
@@ -383,16 +385,20 @@ def _derived_boundaries(
         elif config.mode == "auto" and _voice_changed(previous, current):
             kind, strength = "voice_change", "weak"
         if kind is not None:
+            position = previous.spoken_end
+            if (position, kind) in existing_keys:
+                continue
             result.append(
                 BoundaryEvent(
                     f"boundary-{next_id:06d}",
-                    previous.spoken_end,
+                    position,
                     kind,
                     origin="planner",
                     strength=strength,
                     attrs={"automatic": True},
                 )
             )
+            existing_keys.add((position, kind))
             next_id += 1
     return result
 
@@ -448,17 +454,6 @@ def _semantic_annotation(annotation: AnnotationSpan) -> bool:
     )
 
 
-def _map_marker(marker: Marker, offset_map: Any, source_length: int, output_length: int) -> Marker:
-    if not offset_map:
-        return marker
-    source_position = marker.spoken_position
-    left = offset_map.get("source_left")
-    if isinstance(left, list) and 0 <= source_position < len(left):
-        position = int(left[source_position])
-    elif source_length == output_length:
-        position = source_position
-    else:
-        position = min(
-            output_length, round(source_position * output_length / max(1, source_length))
-        )
+def _map_marker(marker: Marker, source_map: SourceToSpokenMap) -> Marker:
+    position, _ = source_map.map_source_span(marker.spoken_position, marker.spoken_position)
     return replace(marker, spoken_position=position)

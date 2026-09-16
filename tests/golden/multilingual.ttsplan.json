@@ -39,10 +39,12 @@
     "overlap_mode": "snap",
     "pauses": {
       "clause": 0.3,
+      "enabled": true,
       "mode": "tts",
       "paragraph": 1.0,
       "parenthetical": 0.15,
       "sentence": 0.6,
+      "voice_change": 0.15,
       "weak": 0.15
     },
     "ssmd": {
@@ -95,41 +97,24 @@
     }
   ],
   "markers": [],
-  "plan_id": "sha256:c764e2083beded1d2844b05c9e544a6b169a6093f17ff12714f9b98afd606066",
+  "plan_id": "sha256:61d4fbb1c0196a395afb838b281a89c001a5f4bb877e385950c58f99e5707878",
   "preparation": {
     "backend": "spokenform",
     "languages": ["en-us", "fr", "en-us"],
-    "offset_map": {
-      "edits": [],
-      "output_left": [0, 1, 2, 3, 4, 5, 6, 6, 7, 8, 9, 10, 11, 12, 13, 13, 14],
-      "output_length": 14,
-      "output_right": [0, 1, 2, 3, 4, 5, 6, 6, 7, 8, 9, 10, 11, 12, 13, 13, 14],
-      "source_left": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-      "source_length": 14,
-      "source_right": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-    },
     "replacements": [],
-    "source_text": "Hello Bonjour.",
-    "spoken_text": "Hello Bonjour.",
-    "version": "0.4.2",
+    "version": "0.4.4.dev0+g71feb9cb4.d19800101",
     "warnings": []
   },
   "producer": {
     "name": "ttsplan",
-    "version": "0.1.0"
+    "version": "0.0.dev5+gd834970f9.d19800101"
   },
   "schema_version": 1,
   "segments": [
     {
       "annotation_ids": ["annotation-000000"],
       "clause": 0,
-      "directives": {
-        "audio": null,
-        "emphasis": null,
-        "pronunciation": null,
-        "prosody": null,
-        "voice": null
-      },
+      "directives": {},
       "id": "seg-000000",
       "language": "en-us",
       "paragraph": 0,
@@ -144,21 +129,13 @@
       "sentence": 0,
       "spoken_end": 5,
       "spoken_start": 0,
-      "structural_end": null,
-      "structural_start": null,
       "text": "Hello",
       "token_indices": [0]
     },
     {
       "annotation_ids": ["annotation-000000", "annotation-000001"],
       "clause": 0,
-      "directives": {
-        "audio": null,
-        "emphasis": null,
-        "pronunciation": null,
-        "prosody": null,
-        "voice": null
-      },
+      "directives": {},
       "id": "seg-000001",
       "language": "fr",
       "paragraph": 0,
@@ -173,21 +150,13 @@
       "sentence": 0,
       "spoken_end": 13,
       "spoken_start": 6,
-      "structural_end": null,
-      "structural_start": null,
       "text": "Bonjour",
       "token_indices": [1]
     },
     {
       "annotation_ids": ["annotation-000000"],
       "clause": 0,
-      "directives": {
-        "audio": null,
-        "emphasis": null,
-        "pronunciation": null,
-        "prosody": null,
-        "voice": null
-      },
+      "directives": {},
       "id": "seg-000002",
       "language": "en-us",
       "paragraph": 0,
@@ -202,8 +171,6 @@
       "sentence": 0,
       "spoken_end": 14,
       "spoken_start": 13,
-      "structural_end": null,
-      "structural_start": null,
       "text": ".",
       "token_indices": [2]
     }
@@ -221,36 +188,30 @@
       "id": "token-0",
       "language": "en-us",
       "lemma": "hello",
-      "pos": null,
       "spoken_end": 5,
       "spoken_start": 0,
-      "tag": null,
       "text": "Hello"
     },
     {
       "id": "token-1",
       "language": "fr",
       "lemma": "bonjour",
-      "pos": null,
       "spoken_end": 13,
       "spoken_start": 6,
-      "tag": null,
       "text": "Bonjour"
     },
     {
       "id": "token-2",
       "language": "en-us",
       "lemma": ".",
-      "pos": null,
       "spoken_end": 14,
       "spoken_start": 13,
-      "tag": null,
       "text": "."
     }
   ],
   "units": [
     {
-      "content_hash": "sha256:ad1970cd0af33ea1e95b8358f3fee6d3c7f8e89770eb819a3b489ab852ad3ab4",
+      "content_hash": "sha256:d46800ecdf0ec0f120be0257813ddcbfa0faa70e71916c454b34d3b079153240",
       "id": "unit-0000",
       "index": 0,
       "kind": "paragraph",

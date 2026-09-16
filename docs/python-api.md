@@ -56,6 +56,8 @@ The public model also exposes `languages`, `annotations`, `boundaries`,
 `tokens`, `markers`, `document_metadata`, and resolved segment pauses. See the
 [consumer guide](consumer-guide) for how a renderer uses these fields.
 
+`TextPreparationInfo` exposes serializable provenance only. Exact source-to-spoken mapping is transient planner state and is not part of `TTSPlan` or its JSON contract.
+
 ## Errors
 
 Planning and loading failures derive from `ttsplan.TTSPlanError`. Important

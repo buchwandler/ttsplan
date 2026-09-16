@@ -42,10 +42,12 @@
     "overlap_mode": "snap",
     "pauses": {
       "clause": 0.3,
+      "enabled": true,
       "mode": "tts",
       "paragraph": 1.0,
       "parenthetical": 0.15,
       "sentence": 0.6,
+      "voice_change": 0.15,
       "weak": 0.15
     },
     "ssmd": {
@@ -84,28 +86,17 @@
     }
   ],
   "markers": [],
-  "plan_id": "sha256:5c09bcf9d41cfb42c772f610c4937f1080c4b8911fc7837bae81b98f01c80284",
+  "plan_id": "sha256:d297eda7e0c7fc6cb793f788144194fade2f048ec9996f54dc16df422852f826",
   "preparation": {
     "backend": "spokenform",
     "languages": ["en-us"],
-    "offset_map": {
-      "edits": [],
-      "output_left": [0, 1, 2, 3, 4],
-      "output_length": 4,
-      "output_right": [0, 1, 2, 3, 4],
-      "source_left": [0, 1, 2, 3, 4],
-      "source_length": 4,
-      "source_right": [0, 1, 2, 3, 4]
-    },
     "replacements": [],
-    "source_text": "fast",
-    "spoken_text": "fast",
-    "version": "0.4.2",
+    "version": "0.4.4.dev0+g71feb9cb4.d19800101",
     "warnings": []
   },
   "producer": {
     "name": "ttsplan",
-    "version": "0.1.0"
+    "version": "0.0.dev5+gd834970f9.d19800101"
   },
   "schema_version": 1,
   "segments": [
@@ -113,17 +104,14 @@
       "annotation_ids": ["annotation-000000", "annotation-000001"],
       "clause": 0,
       "directives": {
-        "audio": null,
         "emphasis": {
           "level": "strong"
         },
-        "pronunciation": null,
         "prosody": {
           "pitch": "+2st",
           "rate": "1.2",
           "volume": "80%"
-        },
-        "voice": null
+        }
       },
       "id": "seg-000000",
       "language": "en-us",
@@ -139,8 +127,6 @@
       "sentence": 0,
       "spoken_end": 4,
       "spoken_start": 0,
-      "structural_end": null,
-      "structural_start": null,
       "text": "fast",
       "token_indices": [0]
     }
@@ -158,16 +144,14 @@
       "id": "token-0",
       "language": "en-us",
       "lemma": "fast",
-      "pos": null,
       "spoken_end": 4,
       "spoken_start": 0,
-      "tag": null,
       "text": "fast"
     }
   ],
   "units": [
     {
-      "content_hash": "sha256:4cb610b1c3c42a165a345f93d79c49157990f15e7316f9ec7c67feac97fed548",
+      "content_hash": "sha256:fe1c4df33380c7444137d35f1252179152180b5566b84eb2695111dd60e1b0ab",
       "id": "unit-0000",
       "index": 0,
       "kind": "paragraph",

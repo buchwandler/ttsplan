@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from ttsplan import PlannerConfig, TTSPlanner
+from utterplan import PlannerConfig, UtterancePlanner
 
 source = Path("chapter.ssmd").read_text(encoding="utf-8")
-plan = TTSPlanner(PlannerConfig(language="en-us", document_format="ssmd")).plan(source)
-plan.save("chapter.ttsplan.json")
+plan = UtterancePlanner(PlannerConfig(language="en-us", document_format="ssmd")).plan(source)
+plan.save("chapter.utterplan.json")

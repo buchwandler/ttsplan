@@ -1,6 +1,6 @@
-# TTSPlan
+# UtterPlan
 
-TTSPlan compiles text and SSMD into deterministic, engine-independent semantic
+UtterPlan compiles text and SSMD into deterministic, engine-independent semantic
 speech plans. It stops before G2P and synthesis.
 
 ```{toctree}
@@ -25,6 +25,6 @@ python-api
 changelog
 ```
 
-The package version and the TTSPlan schema version are independent. The first
+The package version and the UtterPlan schema version are independent. The first
 public package release is `0.1.0` and the current interchange schema is
 version `1`.

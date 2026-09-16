@@ -5,30 +5,30 @@ import sys
 from pathlib import Path
 from typing import Literal, cast
 
-from . import PlannerConfig, TTSPlan, TTSPlanner, __version__
+from . import PlannerConfig, UtterancePlan, UtterancePlanner, __version__
 from .config import LinguisticsConfig, PauseConfig
-from .exceptions import TTSPlanError
+from .exceptions import UtterPlanError
 
 InputFormat = Literal["plain", "ssmd"]
 
 
 _EXAMPLES = """examples:
-  ttsplan compile "Hello world." --lang en-us
-  echo "Hello world." | ttsplan compile --lang en-us | jq .
-  ttsplan compile chapter.ssmd --lang en-us -o chapter.ttsplan.json
-  ttsplan validate chapter.ttsplan.json
-  ttsplan inspect chapter.ttsplan.json --segment 0
+  utterplan compile "Hello world." --lang en-us
+  echo "Hello world." | utterplan compile --lang en-us | jq .
+  utterplan compile chapter.ssmd --lang en-us -o chapter.utterplan.json
+  utterplan validate chapter.utterplan.json
+  utterplan inspect chapter.utterplan.json --segment 0
 """
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="ttsplan",
+        prog="utterplan",
         description="Compile text or SSMD into deterministic, engine-independent TTS plans.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=_EXAMPLES,
     )
-    parser.add_argument("--version", action="version", version=f"ttsplan {__version__}")
+    parser.add_argument("--version", action="version", version=f"utterplan {__version__}")
     commands = parser.add_subparsers(dest="command", required=True)
 
     compile_parser = commands.add_parser(
@@ -167,7 +167,7 @@ def _compile(args: argparse.Namespace) -> int:
         pauses=PauseConfig(mode=args.pause_mode),
         linguistics=_linguistics_config(args.spacy),
     )
-    plan = TTSPlanner(config).plan(source)
+    plan = UtterancePlanner(config).plan(source)
     payload = plan.to_json()
     if args.output is None:
         print(payload, end="")
@@ -188,7 +188,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "compile":
             return _compile(args)
-        plan = TTSPlan.load(args.input)
+        plan = UtterancePlan.load(args.input)
         if args.command == "validate":
             print("valid")
             print(f"schema version: {plan.schema_version}")
@@ -199,15 +199,15 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         _inspect(plan, args)
         return 0
-    except (OSError, TTSPlanError, ValueError, TypeError) as exc:
+    except (OSError, UtterPlanError, ValueError, TypeError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
 
-
-def _inspect(plan: TTSPlan, args: argparse.Namespace) -> None:
-    print(f"TTSPlan schema {plan.schema_version}")
+    print(f"UtterPlan schema {plan.schema_version}")
     print(f"Plan: {plan.plan_id}")
-    print(f"Source: {plan.source.format}")
+
+
+def _inspect(plan: UtterancePlan, args: argparse.Namespace) -> None:
     print(f"Default language: {plan.config.get('language', '')}")
     print("\nTexts")
     print(f"  source:      {len(plan.source.text)} characters")

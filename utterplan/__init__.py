@@ -14,8 +14,8 @@ from .exceptions import (
     PlanValidationError,
     SegmentationError,
     TextPreparationError,
-    TTSPlanError,
     UnsupportedSchemaError,
+    UtterPlanError,
 )
 from .language import LanguageRun, build_language_runs, normalize_language
 from .model import (
@@ -35,10 +35,10 @@ from .model import (
     SegmentDirectives,
     TextPreparationInfo,
     TokenAnnotation,
-    TTSPlan,
+    UtterancePlan,
     VoiceDirective,
 )
-from .planner import TTSPlanner
+from .planner import UtterancePlanner
 
 __all__ = [
     "__version__",
@@ -47,8 +47,8 @@ __all__ = [
     "LinguisticsConfig",
     "SSMDConfig",
     "parse_duration",
-    "TTSPlanner",
-    "TTSPlan",
+    "UtterancePlanner",
+    "UtterancePlan",
     "PlanSource",
     "PlanTexts",
     "PlanSegment",
@@ -69,7 +69,7 @@ __all__ = [
     "Diagnostic",
     "normalize_language",
     "build_language_runs",
-    "TTSPlanError",
+    "UtterPlanError",
     "ConfigurationError",
     "PlanFormatError",
     "PlanValidationError",

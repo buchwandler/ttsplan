@@ -1,12 +1,12 @@
 # Renderer consumer guide
 
-TTSPlan ends at a semantic planning boundary. A renderer consumes the public
+UtterPlan ends at a semantic planning boundary. A renderer consumes the public
 plan object and begins G2P after planning. It does not need a JSON round trip
 when planner and renderer run in the same process.
 
 ## Planning defaults
 
-TTSPlan's default text-preparation backend is `spokenform`, its default pause mode is `tts`, and the default CLI linguistic-resource policy is `spacy off`. The default path uses deterministic fallback tokenization and analysis and does not depend on an installed spaCy model.
+UtterPlan's default text-preparation backend is `spokenform`, its default pause mode is `tts`, and the default CLI linguistic-resource policy is `spacy off`. The default path uses deterministic fallback tokenization and analysis and does not depend on an installed spaCy model.
 
 `spacy auto` is an opt-in enrichment policy. When a compatible local model is available, it may expose richer tokenization, POS tags, lemmas, and tags. Consumers should not assume `auto` is enabled, and provider documents remain internal planning state rather than public plan data.
 
@@ -34,7 +34,7 @@ All segment ranges and renderer-facing ranges are spoken-text coordinates.
 
 Preparation provenance is diagnostic metadata for consumers. Do not depend on a serialized coordinate map. All structural-to-spoken conversion has already been resolved by the planner.
 Voice bindings are logical names, not backend voice IDs. Consumers must not
-recompute pause policy, resolve engine voices in TTSPlan, or depend on provider
+recompute pause policy, resolve engine voices in UtterPlan, or depend on provider
 documents that were used during planning.
 
 ## Renderer-neutral pseudocode
@@ -53,11 +53,11 @@ for unit in plan.units:
 ```
 
 A consumer may instead index segments, tokens, annotations, and markers by
-public IDs. The plan's own `validate()` method and `TTSPlan.load()` enforce
+public IDs. The plan's own `validate()` method and `UtterancePlan.load()` enforce
 reference, range, membership, identity, and unit-hash invariants.
 
 ## What is intentionally absent
 
 Plans contain no phonemes, model token IDs, model sessions, audio, renderer
 configuration, or model-derived timings. Acoustic retries and renderer-level
-randomness remain outside TTSPlan.
+randomness remain outside UtterPlan.

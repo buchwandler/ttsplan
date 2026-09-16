@@ -5,7 +5,7 @@
 Install the package from the distribution that matches your environment:
 
 ```bash
-python -m pip install ttsplan
+python -m pip install utterplan
 ```
 
 For development, install the test and documentation extras from a checkout:
@@ -17,9 +17,9 @@ python -m pip install -e '.[dev,docs]'
 ## Create a plan in Python
 
 ```python
-from ttsplan import PlannerConfig, TTSPlanner
+from utterplan import PlannerConfig, UtterancePlanner
 
-planner = TTSPlanner(PlannerConfig(language="en-us"))
+planner = UtterancePlanner(PlannerConfig(language="en-us"))
 plan = planner.plan("Doctor Smith bought 5 kg of apples.")
 
 print(plan.texts.spoken)
@@ -33,7 +33,7 @@ phonemes, model tokens, or audio.
 ## Compile literal text
 
 ```bash
-ttsplan compile "Doctor Smith bought 5 kg." --lang en-us
+utterplan compile "Doctor Smith bought 5 kg." --lang en-us
 ```
 
 Without `-o`, the complete plan JSON is written to stdout. This makes the
@@ -41,20 +41,20 @@ result convenient for shell pipelines:
 
 ## Defaults and linguistic resources
 
-The default compile policy is `spokenform` for text preparation, `tts` for pause mode, and `spacy off` for linguistic resources. The `spacy off` path uses TTSPlan's deterministic fallback tokenizer and analysis, so the default planner does not require an installed spaCy model.
+The default compile policy is `spokenform` for text preparation, `tts` for pause mode, and `spacy off` for linguistic resources. The `spacy off` path uses UtterPlan's deterministic fallback tokenizer and analysis, so the default planner does not require an installed spaCy model.
 
-`--spacy auto` is an explicit opt-in. With a compatible local model, it may provide richer tokenization, POS tags, lemmas, and tags. It is not the default, and TTSPlan does not download models automatically.
+`--spacy auto` is an explicit opt-in. With a compatible local model, it may provide richer tokenization, POS tags, lemmas, and tags. It is not the default, and UtterPlan does not download models automatically.
 
 ```bash
-ttsplan compile "Hello world." --lang en-us | jq '.segments'
+utterplan compile "Hello world." --lang en-us | jq '.segments'
 ```
 
 ## Compile stdin or a file
 
 ```bash
-echo "Hello world." | ttsplan compile --lang en-us > hello.ttsplan.json
-ttsplan compile chapter.ssmd --lang en-us -o chapter.ttsplan.json
-ttsplan compile --file chapter.ssmd --lang en-us -o chapter.ttsplan.json
+echo "Hello world." | utterplan compile --lang en-us > hello.utterplan.json
+utterplan compile chapter.ssmd --lang en-us -o chapter.utterplan.json
+utterplan compile --file chapter.ssmd --lang en-us -o chapter.utterplan.json
 ```
 
 A single existing positional path is read as a file. Use
@@ -63,9 +63,9 @@ A single existing positional path is read as a file. Use
 ## Inspect and validate
 
 ```bash
-ttsplan validate hello.ttsplan.json
-ttsplan inspect hello.ttsplan.json --segment 0
-ttsplan inspect hello.ttsplan.json --unit 0 --boundaries --tokens
+utterplan validate hello.utterplan.json
+utterplan inspect hello.utterplan.json --segment 0
+utterplan inspect hello.utterplan.json --unit 0 --boundaries --tokens
 ```
 
 ## SSMD
@@ -74,7 +74,7 @@ SSMD is selected by a `.ssmd` suffix or explicitly from stdin:
 
 ```bash
 printf '[Hello]{lang="en-us"} ...s [Bonjour]{lang="fr"}.\n' \
-  | ttsplan compile --lang en-us --input-format ssmd
+  | utterplan compile --lang en-us --input-format ssmd
 ```
 
 Structural text preserves the parsed document representation. Spoken text is

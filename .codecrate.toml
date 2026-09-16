@@ -1,11 +1,11 @@
 [codecrate]
-output = "context_ttsplan.md"
+output = "context_utterplan.md"
 keep_docstrings = true
 dedupe = true
 metadata = false
 respect_gitignore = true
-exclude = ["*/.venv/*", "context_ttsplan.*"]
-gitignore_allow = ["ttsplan/_version.py"]
+exclude = ["*/.venv/*", "context_utterplan.*"]
+gitignore_allow = ["utterplan/_version.py"]
 include = [
   "**/*.py",
   "**/*.toml",

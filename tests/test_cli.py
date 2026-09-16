@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from ttsplan.cli import build_parser, main
+from utterplan.cli import build_parser, main
 
 
 def _payload(capsys: pytest.CaptureFixture[str]) -> dict[str, object]:
@@ -26,7 +26,7 @@ def test_compile_cli_defaults() -> None:
 def test_compile_literal_text_to_stdout_json(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["compile", "Hello world.", "--lang", "en-us"]) == 0
     payload = _payload(capsys)
-    assert payload["format"] == "ttsplan"
+    assert payload["format"] == "utterplan"
     assert payload["schema_version"] == 1
     assert payload["segments"]
 
@@ -90,18 +90,18 @@ def test_compile_explicit_ssmd_from_stdin(
 
 
 def test_compile_output_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    output = tmp_path / "plan.ttsplan.json"
+    output = tmp_path / "plan.utterplan.json"
     assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(output)]) == 0
     captured = capsys.readouterr()
     assert captured.out == ""
     assert "wrote" in captured.err
-    assert json.loads(output.read_text(encoding="utf-8"))["format"] == "ttsplan"
+    assert json.loads(output.read_text(encoding="utf-8"))["format"] == "utterplan"
 
 
 def test_compile_output_file_and_json_stdout(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    output = tmp_path / "plan.ttsplan.json"
+    output = tmp_path / "plan.utterplan.json"
     assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(output), "--json"]) == 0
     captured = capsys.readouterr()
     assert captured.err == ""
@@ -111,7 +111,7 @@ def test_compile_output_file_and_json_stdout(
 def test_compile_refuses_existing_output_without_force(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    output = tmp_path / "plan.ttsplan.json"
+    output = tmp_path / "plan.utterplan.json"
     output.write_text("sentinel", encoding="utf-8")
     assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(output)]) == 1
     captured = capsys.readouterr()
@@ -122,13 +122,13 @@ def test_compile_refuses_existing_output_without_force(
 def test_compile_force_replaces_existing_output(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    output = tmp_path / "plan.ttsplan.json"
+    output = tmp_path / "plan.utterplan.json"
     output.write_text("sentinel", encoding="utf-8")
     assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(output), "--force"]) == 0
     captured = capsys.readouterr()
     assert captured.out == ""
     assert "wrote" in captured.err
-    assert json.loads(output.read_text(encoding="utf-8"))["format"] == "ttsplan"
+    assert json.loads(output.read_text(encoding="utf-8"))["format"] == "utterplan"
 
 
 def test_compile_json_stdout_contains_no_status_text(capsys: pytest.CaptureFixture[str]) -> None:
@@ -139,7 +139,7 @@ def test_compile_json_stdout_contains_no_status_text(capsys: pytest.CaptureFixtu
 
 
 def test_compile_status_goes_to_stderr(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    output = tmp_path / "plan.ttsplan.json"
+    output = tmp_path / "plan.utterplan.json"
     assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(output)]) == 0
     captured = capsys.readouterr()
     assert captured.out == ""
@@ -161,11 +161,11 @@ def test_top_level_version(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as result:
         main(["--version"])
     assert result.value.code == 0
-    assert capsys.readouterr().out.startswith("ttsplan ")
+    assert capsys.readouterr().out.startswith("utterplan ")
 
 
 def test_validate_valid_plan(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    output = tmp_path / "plan.ttsplan.json"
+    output = tmp_path / "plan.utterplan.json"
     assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(output)]) == 0
     capsys.readouterr()
     assert main(["validate", str(output)]) == 0
@@ -182,7 +182,7 @@ def test_validate_invalid_plan(tmp_path: Path, capsys: pytest.CaptureFixture[str
 
 
 def test_inspect_segment(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    output = tmp_path / "plan.ttsplan.json"
+    output = tmp_path / "plan.utterplan.json"
     assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(output)]) == 0
     capsys.readouterr()
     assert main(["inspect", str(output), "--segment", "0"]) == 0
@@ -192,7 +192,7 @@ def test_inspect_segment(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> 
 
 
 def test_inspect_preparation(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    output = tmp_path / "plan.ttsplan.json"
+    output = tmp_path / "plan.utterplan.json"
     assert main(["compile", "Dr. bought 5 kg.", "--lang", "en-us", "-o", str(output)]) == 0
     capsys.readouterr()
     assert main(["inspect", str(output), "--preparation"]) == 0

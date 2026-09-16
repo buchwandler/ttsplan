@@ -8,11 +8,11 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath(".."))
-sys.path.insert(0, os.path.abspath("../ttsplan"))
+sys.path.insert(0, os.path.abspath("../utterplan"))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "ttsplan"
+project = "UtterPlan"
 copyright = "2025, Holger Nahrstaedt"
 author = "Holger Nahrstaedt"
 

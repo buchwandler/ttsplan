@@ -74,7 +74,7 @@
       "pass_a_tokens": 13
     }
   },
-  "format": "ttsplan",
+  "format": "utterplan",
   "languages": [
     {
       "id": "lang-0",
@@ -85,7 +85,7 @@
     }
   ],
   "markers": [],
-  "plan_id": "sha256:adfc05375564eee279745a57a141e8a645e95d855d4ec5d4bd25cc9dea4df790",
+  "plan_id": "sha256:7fe6a205392b6102bd705d4451188ed54552a1ab77aa40959f42a6a913900814",
   "preparation": {
     "backend": "spokenform",
     "languages": ["en-us"],
@@ -94,8 +94,8 @@
     "warnings": []
   },
   "producer": {
-    "name": "ttsplan",
-    "version": "0.0.dev7+g1e0c13a4d.d19800101"
+    "name": "utterplan",
+    "version": "0.1.0"
   },
   "schema_version": 1,
   "segments": [
@@ -118,7 +118,7 @@
       "spoken_end": 19,
       "spoken_start": 0,
       "text": "The backup battery ",
-      "token_indices": []
+      "token_indices": [0, 1, 2]
     },
     {
       "annotation_ids": [],
@@ -139,7 +139,7 @@
       "spoken_end": 53,
       "spoken_start": 19,
       "text": "(still warm from the morning test)",
-      "token_indices": []
+      "token_indices": [3, 4, 5, 6, 7, 8]
     },
     {
       "annotation_ids": [],
@@ -160,7 +160,7 @@
       "spoken_end": 77,
       "spoken_start": 53,
       "text": " sat beside the console.",
-      "token_indices": []
+      "token_indices": [9, 10, 11, 12]
     }
   ],
   "source": {
@@ -279,7 +279,7 @@
   ],
   "units": [
     {
-      "content_hash": "sha256:6ef37351fc49f9f1ed7af9c905f4f67af26c85323410617304da7acfcd8b773e",
+      "content_hash": "sha256:5903cb139509fff58be1bda1361160ea2302ef02368a8275a67a3c250f1b2c67",
       "id": "unit-0000",
       "index": 0,
       "kind": "paragraph",

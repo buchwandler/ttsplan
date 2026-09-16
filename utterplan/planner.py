@@ -16,7 +16,7 @@ from .model import (
     PlanSegment,
     PlanSource,
     PlanTexts,
-    TTSPlan,
+    UtterancePlan,
 )
 from .parsers import PlainDocumentParser, SSMDDocumentParser
 from .pauses import boundary_is_active, resolve_pauses
@@ -24,7 +24,7 @@ from .preparation import IdentityTextPreparer, SourceToSpokenMap, SpokenformText
 from .units import make_units
 
 
-class TTSPlanner:
+class UtterancePlanner:
     """Reusable planner for sequential requests.
 
     Linguistic resource caches are shared, but request configuration and all
@@ -38,7 +38,7 @@ class TTSPlanner:
 
     def plan(
         self, text: str, *, config: PlannerConfig | None = None, unit: str | None = None
-    ) -> TTSPlan:
+    ) -> UtterancePlan:
         if not isinstance(text, str):
             raise TypeError("text must be a string")
         effective_config = config if config is not None else self.config
@@ -109,7 +109,7 @@ class TTSPlanner:
             )
         plan_config = _config_dict(config)
         plan_config["unit"] = selected_unit
-        plan = TTSPlan(
+        plan = UtterancePlan(
             source=PlanSource(parsed.source_text and config.document_format or "plain", text),
             config=plan_config,
             texts=PlanTexts(parsed.structural_text, spoken),

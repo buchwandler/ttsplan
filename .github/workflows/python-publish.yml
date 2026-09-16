@@ -63,8 +63,8 @@ jobs:
           sdists = [path for path in artifacts if path.name.endswith(".tar.gz")]
           assert len(wheels) == 1, wheels
           assert len(sdists) == 1, sdists
-          wheel_version = re.match(r"ttsplan-([^-]+)-", wheels[0].name).group(1)
-          sdist_version = re.match(r"ttsplan-([^-]+)\.tar\.gz$", sdists[0].name).group(1)
+          wheel_version = re.match(r"utterplan-([^-]+)-", wheels[0].name).group(1)
+          sdist_version = re.match(r"utterplan-([^-]+)\.tar\.gz$", sdists[0].name).group(1)
           assert wheel_version == tag_version, (wheel_version, tag_version)
           assert sdist_version == tag_version, (sdist_version, tag_version)
 
@@ -79,8 +79,8 @@ jobs:
               assert has_minimum(requirements, "phrasplit", "0.3.9")
               assert has_minimum(requirements, "ssmd", "0.8.7")
               assert has_minimum(requirements, "spokenform", "0.4.3")
-              assert any(name.endswith("ttsplan/py.typed") for name in archive.namelist())
-              assert any(name.endswith("ttsplan/ttsplan.schema.json") for name in archive.namelist())
+              assert any(name.endswith("utterplan/py.typed") for name in archive.namelist())
+              assert any(name.endswith("utterplan/utterplan.schema.json") for name in archive.namelist())
           PY
 
       - name: Publish package to PyPI

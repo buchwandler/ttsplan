@@ -1,10 +1,10 @@
-from ttsplan import PlannerConfig, TTSPlanner
+from utterplan import PlannerConfig, UtterancePlanner
 
 TEXT = "The backup battery (still warm from the morning test) sat beside the console."
 
 
 def test_medial_parenthetical_boundaries_use_spoken_coordinates_and_anchors():
-    plan = TTSPlanner(PlannerConfig(language="en-us", text_preparation="identity")).plan(TEXT)
+    plan = UtterancePlanner(PlannerConfig(language="en-us", text_preparation="identity")).plan(TEXT)
     opening = TEXT.index("(")
     closing = TEXT.index(")")
     events = [event for event in plan.boundaries if event.kind == "parenthetical"]
@@ -20,7 +20,7 @@ def test_medial_parenthetical_boundaries_use_spoken_coordinates_and_anchors():
 
 
 def test_parenthetical_boundary_keeps_phrasplit_origin():
-    plan = TTSPlanner(PlannerConfig(language="en-us")).plan(
+    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan(
         "They changed out their clothes (stained with blood)."
     )
     events = [event for event in plan.boundaries if event.kind == "parenthetical"]
@@ -30,19 +30,21 @@ def test_parenthetical_boundary_keeps_phrasplit_origin():
 
 
 def test_language_cut_does_not_invent_clausal_comma():
-    plan = TTSPlanner(PlannerConfig(language="en-us")).plan('Hello [Bonjour]{lang="fr"}.')
+    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan('Hello [Bonjour]{lang="fr"}.')
     assert not any(event.kind == "clausal_comma" for event in plan.boundaries)
 
 
 def test_explicit_ssmd_boundary_keeps_ssmd_origin():
-    plan = TTSPlanner(PlannerConfig(language="en-us")).plan("Hello ...c world")
+    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan("Hello ...c world")
     event = next(event for event in plan.boundaries if event.kind == "explicit")
     assert event.origin == "ssmd"
     assert event.attrs["anchor"] == "after"
 
 
 def test_derived_paragraph_boundary_does_not_duplicate_existing_event():
-    plan = TTSPlanner(PlannerConfig(language="en-us")).plan("One paragraph.\n\nTwo paragraph.")
+    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan(
+        "One paragraph.\n\nTwo paragraph."
+    )
     keys = [(event.position, event.kind) for event in plan.boundaries]
     assert len(keys) == len(set(keys))
     assert [(event.position, event.kind) for event in plan.boundaries] == [(14, "paragraph")]

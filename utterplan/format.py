@@ -4,18 +4,18 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .model import FORMAT, SCHEMA_VERSION, TTSPlan
+from .model import FORMAT, SCHEMA_VERSION, UtterancePlan
 
-SCHEMA_PATH = Path(__file__).resolve().parent.parent / "spec" / "ttsplan.schema.json"
-PACKAGE_SCHEMA_PATH = Path(__file__).resolve().parent / "ttsplan.schema.json"
-
-
-def validate_json(value: Any) -> TTSPlan:
-    return TTSPlan.from_dict(value)
+SCHEMA_PATH = Path(__file__).resolve().parent.parent / "spec" / "utterplan.schema.json"
+PACKAGE_SCHEMA_PATH = Path(__file__).resolve().parent / "utterplan.schema.json"
 
 
-def validate_file(path: str | Path) -> TTSPlan:
-    return TTSPlan.load(path)
+def validate_json(value: Any) -> UtterancePlan:
+    return UtterancePlan.from_dict(value)
+
+
+def validate_file(path: str | Path) -> UtterancePlan:
+    return UtterancePlan.load(path)
 
 
 def schema() -> dict[str, Any]:

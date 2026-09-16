@@ -28,7 +28,7 @@ def unit_hash_payload(unit: Any) -> dict[str, Any]:
         else:
             markers.append(marker)
     return {
-        "hash_schema": "ttsplan-unit-v1",
+        "hash_schema": "utterplan-unit-v1",
         "segments": [
             {
                 "text": segment.text,

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/buchwandler/ttsplan/blob/main/spec/ttsplan.schema.json",
-  "title": "TTSPlan schema",
+  "$id": "https://github.com/buchwandler/utterplan/blob/main/spec/utterplan.schema.json",
+  "title": "UtterPlan schema",
   "type": "object",
   "required": [
     "format",
@@ -23,7 +23,7 @@
     "diagnostics"
   ],
   "properties": {
-    "format": { "const": "ttsplan" },
+    "format": { "const": "utterplan" },
     "schema_version": { "const": 1 },
     "producer": {
       "type": "object",

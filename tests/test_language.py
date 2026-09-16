@@ -1,6 +1,6 @@
 import pytest
 
-from ttsplan import LanguagePlanError, build_language_runs, normalize_language
+from utterplan import LanguagePlanError, build_language_runs, normalize_language
 
 
 def test_normalization_and_nested_spans():

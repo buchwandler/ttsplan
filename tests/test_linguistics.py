@@ -1,9 +1,9 @@
 import sys
 from types import SimpleNamespace
 
-from ttsplan import PlannerConfig, TTSPlanner
-from ttsplan.language import LanguageRun
-from ttsplan.linguistics import LinguisticResourcePool, analyze_run_analyses
+from utterplan import PlannerConfig, UtterancePlanner
+from utterplan.language import LanguageRun
+from utterplan.linguistics import LinguisticResourcePool, analyze_run_analyses
 
 
 def test_run_analysis_is_lightweight_and_request_local():
@@ -27,7 +27,7 @@ def test_run_analysis_is_lightweight_and_request_local():
 
 
 def test_provider_documents_are_not_serialized():
-    plan = TTSPlanner(PlannerConfig(language="en-us")).plan("Hello world.")
+    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan("Hello world.")
     serialized = plan.to_json()
     assert "provider_doc" not in serialized
     assert "spacy.tokens" not in serialized
@@ -38,7 +38,7 @@ def test_default_planner_does_not_load_spacy(monkeypatch):
         raise AssertionError("default planning must not load spaCy")
 
     monkeypatch.setattr(LinguisticResourcePool, "pipeline", fail_if_loaded)
-    plan = TTSPlanner(PlannerConfig(language="en-us")).plan("Hello world.")
+    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan("Hello world.")
 
     assert plan.texts.spoken == "Hello world."
     assert all(token.pos is None and token.tag is None for token in plan.tokens)

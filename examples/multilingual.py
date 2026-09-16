@@ -1,4 +1,4 @@
-from ttsplan import PlannerConfig, TTSPlanner
+from utterplan import PlannerConfig, UtterancePlanner
 
-plan = TTSPlanner(PlannerConfig(language="en-us")).plan("Hello.")
+plan = UtterancePlanner(PlannerConfig(language="en-us")).plan("Hello.")
 print([(run.language, run.spoken_start, run.spoken_end) for run in plan.languages])

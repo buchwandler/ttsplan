@@ -1,7 +1,7 @@
 # PyKokoro reference evidence
 
 The sibling `../pykokoro` checkout is a read-only migration oracle. The normal
-TTSPlan package never imports it. The optional reference test invokes the
+UtterPlan package never imports it. The optional reference test invokes the
 frontend helper in a subprocess and compares normalized, engine-neutral
 semantics.
 
@@ -31,18 +31,18 @@ such as `fr` and `fr-fr` to their base language. Provider-specific segment
 splits and whitespace-only records are normalized away.
 
 Annotation counts are compared after normalizing provider-specific annotation
-kind names. Typed TTSPlan directives, resolved pauses, marker ownership, and
-unit records remain TTSPlan-native consumer contract behavior.
+kind names. Typed UtterPlan directives, resolved pauses, marker ownership, and
+unit records remain UtterPlan-native consumer contract behavior.
 
-| Behavior                      | PyKokoro representation        | TTSPlan representation                   | Policy                                                 |
-| ----------------------------- | ------------------------------ | ---------------------------------------- | ------------------------------------------------------ |
-| Written-to-spoken preparation | Provider preparation object    | `TextPreparationInfo` and `texts.spoken` | Compare spoken text and normalized replacements        |
-| Segment text                  | Provider frontend segments     | `PlanSegment.text`                       | Compare non-whitespace content                         |
-| Language                      | Provider language metadata     | `PlanSegment.language`                   | Compare base language when aligned                     |
-| Coordinates                   | Provider offsets               | Spoken and structural documented ranges  | Compare normalized content and validate TTSPlan ranges |
-| Pauses                        | Provider boundary handling     | `ResolvedPause` plus `BoundaryEvent`     | Keep deterministic TTSPlan semantics                   |
-| Provider documents            | Request-local frontend objects | Released before plan construction        | Do not retain provider objects                         |
-| Phonemes and audio            | Renderer-specific              | Not present                              | Out of scope                                           |
+| Behavior                      | PyKokoro representation        | UtterPlan representation                 | Policy                                                   |
+| ----------------------------- | ------------------------------ | ---------------------------------------- | -------------------------------------------------------- |
+| Written-to-spoken preparation | Provider preparation object    | `TextPreparationInfo` and `texts.spoken` | Compare spoken text and normalized replacements          |
+| Segment text                  | Provider frontend segments     | `PlanSegment.text`                       | Compare non-whitespace content                           |
+| Language                      | Provider language metadata     | `PlanSegment.language`                   | Compare base language when aligned                       |
+| Coordinates                   | Provider offsets               | Spoken and structural documented ranges  | Compare normalized content and validate UtterPlan ranges |
+| Pauses                        | Provider boundary handling     | `ResolvedPause` plus `BoundaryEvent`     | Keep deterministic UtterPlan semantics                   |
+| Provider documents            | Request-local frontend objects | Released before plan construction        | Do not retain provider objects                           |
+| Phonemes and audio            | Renderer-specific              | Not present                              | Out of scope                                             |
 
 Run the optional suite with:
 

@@ -216,6 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-context_ttsplan*.*
+context_utterplan*.*
 
-ttsplan/_version.py
+utterplan/_version.py

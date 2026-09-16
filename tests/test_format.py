@@ -2,22 +2,28 @@ import json
 
 import pytest
 
-from ttsplan import PlannerConfig, PlanValidationError, TTSPlan, TTSPlanner, UnsupportedSchemaError
-from ttsplan.format import schema
+from utterplan import (
+    PlannerConfig,
+    PlanValidationError,
+    UnsupportedSchemaError,
+    UtterancePlan,
+    UtterancePlanner,
+)
+from utterplan.format import schema
 
 
 def plan():
-    return TTSPlanner(PlannerConfig(language="en-us")).plan("Doctor Smith bought 5 kg.")
+    return UtterancePlanner(PlannerConfig(language="en-us")).plan("Doctor Smith bought 5 kg.")
 
 
 def test_roundtrip_all_apis(tmp_path):
     original = plan()
-    assert TTSPlan.from_dict(original.to_dict()) == original
-    assert TTSPlan.from_json(original.to_json()) == original
-    path = tmp_path / "plan.ttsplan.json"
+    assert UtterancePlan.from_dict(original.to_dict()) == original
+    assert UtterancePlan.from_json(original.to_json()) == original
+    path = tmp_path / "plan.utterplan.json"
     original.save(path)
-    assert TTSPlan.load(path) == original
-    assert TTSPlan.load(path).plan_id == original.plan_id
+    assert UtterancePlan.load(path) == original
+    assert UtterancePlan.load(path).plan_id == original.plan_id
 
 
 def test_schema_and_determinism():
@@ -32,14 +38,14 @@ def test_unsupported_schema():
     value = plan().to_dict()
     value["schema_version"] = 2
     with pytest.raises(UnsupportedSchemaError):
-        TTSPlan.from_dict(value)
+        UtterancePlan.from_dict(value)
 
 
 def test_semantic_corruption_is_rejected():
     value = plan().to_dict()
     value["segments"][0]["text"] = "wrong"
     with pytest.raises(PlanValidationError):
-        TTSPlan.from_dict(value)
+        UtterancePlan.from_dict(value)
 
 
 def test_compact_optional_fields_are_omitted():

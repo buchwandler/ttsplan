@@ -1,4 +1,6 @@
-from ttsplan import PlannerConfig, TTSPlanner
+from utterplan import PlannerConfig, UtterancePlanner
 
-plan = TTSPlanner(PlannerConfig(language="en-us", document_format="ssmd")).plan("Hello ...s world")
+plan = UtterancePlanner(PlannerConfig(language="en-us", document_format="ssmd")).plan(
+    "Hello ...s world"
+)
 print(plan.to_json())

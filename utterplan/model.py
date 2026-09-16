@@ -12,7 +12,7 @@ from .exceptions import PlanFormatError, PlanValidationError, UnsupportedSchemaE
 from .hashing import semantic_hash, unit_hash_payload
 from .language import LanguageRun
 
-FORMAT = "ttsplan"
+FORMAT = "utterplan"
 SCHEMA_VERSION = 1
 
 
@@ -380,7 +380,7 @@ class Diagnostic:
 
 
 @dataclass(frozen=True, slots=True)
-class TTSPlan:
+class UtterancePlan:
     source: PlanSource
     config: Mapping[str, Any]
     texts: PlanTexts
@@ -409,7 +409,7 @@ class TTSPlan:
         data["config"] = semantic_config(data["config"])
         return data
 
-    def with_identity(self) -> TTSPlan:
+    def with_identity(self) -> UtterancePlan:
         return (
             self
             if self.plan_id == semantic_hash(self.semantic_dict())
@@ -450,7 +450,7 @@ class TTSPlan:
         Path(path).write_text(self.to_json(), encoding="utf-8")
 
     @classmethod
-    def from_json(cls, value: str) -> TTSPlan:
+    def from_json(cls, value: str) -> UtterancePlan:
         import json
 
         try:
@@ -460,11 +460,11 @@ class TTSPlan:
         return cls.from_dict(data)
 
     @classmethod
-    def load(cls, path: str | Path) -> TTSPlan:
+    def load(cls, path: str | Path) -> UtterancePlan:
         return cls.from_json(Path(path).read_text(encoding="utf-8"))
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> TTSPlan:
+    def from_dict(cls, data: Mapping[str, Any]) -> UtterancePlan:
         _check_shape(data)
         try:
             plan = _from_dict(data)
@@ -477,17 +477,17 @@ class TTSPlan:
         validate_plan(self)
 
 
-def _replace_plan(plan: TTSPlan, **changes: Any) -> TTSPlan:
+def _replace_plan(plan: UtterancePlan, **changes: Any) -> UtterancePlan:
     values = {field: getattr(plan, field) for field in plan.__dataclass_fields__}
     values.update(changes)
-    return TTSPlan(**values)
+    return UtterancePlan(**values)
 
 
 def _check_shape(data: Mapping[str, Any]) -> None:
     if not isinstance(data, Mapping):
         raise PlanFormatError("plan must be an object", code="json.type")
     if data.get("format") != FORMAT:
-        raise PlanFormatError("format must be 'ttsplan'", code="format.invalid", path="$.format")
+        raise PlanFormatError("format must be 'utterplan'", code="format.invalid", path="$.format")
     allowed = {
         "format",
         "schema_version",
@@ -646,11 +646,11 @@ def _optional_int(value: Any) -> int | None:
     return int(value)
 
 
-def _from_dict(data: Mapping[str, Any]) -> TTSPlan:
+def _from_dict(data: Mapping[str, Any]) -> UtterancePlan:
     source = data["source"]
     texts = data["texts"]
     prep = data["preparation"]
-    return TTSPlan(
+    return UtterancePlan(
         source=PlanSource(str(source["format"]), str(source["text"])),
         config=dict(data["config"]),
         texts=PlanTexts(str(texts["structural"]), str(texts["spoken"])),
@@ -765,7 +765,7 @@ def _from_dict(data: Mapping[str, Any]) -> TTSPlan:
     )
 
 
-def validate_plan(plan: TTSPlan) -> None:
+def validate_plan(plan: UtterancePlan) -> None:
     text = plan.texts.spoken
     if plan.source.format not in {"plain", "ssmd"}:
         raise PlanValidationError("unsupported source format", code="source.format")

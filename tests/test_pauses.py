@@ -1,6 +1,6 @@
 import pytest
 
-from ttsplan import PauseConfig, PlannerConfig, TTSPlanner
+from utterplan import PauseConfig, PlannerConfig, UtterancePlanner
 
 TEXT = "The backup battery (still warm from the morning test) sat beside the console."
 
@@ -8,7 +8,7 @@ TEXT = "The backup battery (still warm from the morning test) sat beside the con
 def test_pause_mode_keeps_sentence_and_paragraph_policy_deterministic():
     text = "One sentence. Two sentences.\n\nSecond paragraph."
     for mode in ("tts", "manual", "auto"):
-        plan = TTSPlanner(
+        plan = UtterancePlanner(
             PlannerConfig(language="en-us", document_format="plain", pauses=PauseConfig(mode=mode))
         ).plan(text)
         assert plan.segments[0].pause_after.seconds == 0.6
@@ -17,8 +17,12 @@ def test_pause_mode_keeps_sentence_and_paragraph_policy_deterministic():
 
 def test_automatic_parenthetical_pause_only_applies_in_auto_mode():
     text = "They changed out their clothes (stained with blood)."
-    tts = TTSPlanner(PlannerConfig(language="en-us", pauses=PauseConfig(mode="tts"))).plan(text)
-    auto = TTSPlanner(PlannerConfig(language="en-us", pauses=PauseConfig(mode="auto"))).plan(text)
+    tts = UtterancePlanner(PlannerConfig(language="en-us", pauses=PauseConfig(mode="tts"))).plan(
+        text
+    )
+    auto = UtterancePlanner(PlannerConfig(language="en-us", pauses=PauseConfig(mode="auto"))).plan(
+        text
+    )
     assert all(
         event_id not in {event.id for event in tts.boundaries if event.kind == "parenthetical"}
         for segment in tts.segments
@@ -33,7 +37,7 @@ def test_automatic_parenthetical_pause_only_applies_in_auto_mode():
 
 @pytest.mark.parametrize("mode", ["tts", "manual"])
 def test_inactive_automatic_parentheticals_do_not_split_segments(mode: str):
-    plan = TTSPlanner(
+    plan = UtterancePlanner(
         PlannerConfig(
             language="en-us",
             text_preparation="identity",
@@ -49,7 +53,7 @@ def test_inactive_automatic_parentheticals_do_not_split_segments(mode: str):
 
 
 def test_disabled_automatic_parentheticals_do_not_split_segments():
-    plan = TTSPlanner(
+    plan = UtterancePlanner(
         PlannerConfig(
             language="en-us",
             text_preparation="identity",
@@ -62,7 +66,7 @@ def test_disabled_automatic_parentheticals_do_not_split_segments():
 
 
 def test_auto_parenthetical_pauses_own_both_segment_edges():
-    plan = TTSPlanner(
+    plan = UtterancePlanner(
         PlannerConfig(
             language="en-us",
             text_preparation="identity",
@@ -90,7 +94,7 @@ def test_auto_parenthetical_pauses_own_both_segment_edges():
 
 def test_parenthetical_closing_pause_coexists_with_paragraph_pause():
     text = TEXT + "\n\nThe team continued the test."
-    plan = TTSPlanner(
+    plan = UtterancePlanner(
         PlannerConfig(
             language="en-us",
             text_preparation="identity",
@@ -106,7 +110,7 @@ def test_parenthetical_closing_pause_coexists_with_paragraph_pause():
 
 
 def test_explicit_ssmd_break_remains_active_when_automatic_pauses_are_disabled():
-    plan = TTSPlanner(
+    plan = UtterancePlanner(
         PlannerConfig(
             language="en-us",
             text_preparation="identity",

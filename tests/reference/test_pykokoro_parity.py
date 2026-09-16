@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from ttsplan import PlannerConfig, TTSPlanner
+from utterplan import PlannerConfig, UtterancePlanner
 
 from .cases import CASES
 
@@ -31,7 +31,7 @@ def test_reference_frontend_normalized_parity() -> None:
     assert set(payload["dependency_versions"]) == {"phrasplit", "spokenform", "ssmd"}
 
     for case in payload["cases"]:
-        plan = TTSPlanner(PlannerConfig(language="en-us")).plan(case["input"])
+        plan = UtterancePlanner(PlannerConfig(language="en-us")).plan(case["input"])
         reference = case["frontend"]
         assert reference["spoken_text"] == plan.texts.spoken
 

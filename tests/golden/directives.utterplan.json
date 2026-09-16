@@ -1,9 +1,36 @@
 {
-  "annotations": [],
+  "annotations": [
+    {
+      "attrs": {
+        "lang": "en-us"
+      },
+      "id": "annotation-000000",
+      "kind": "language",
+      "spoken_end": 4,
+      "spoken_start": 0,
+      "structural_end": 4,
+      "structural_start": 0
+    },
+    {
+      "attrs": {
+        "emphasis": "strong",
+        "pitch": "+2st",
+        "rate": "1.2",
+        "tag": "prosody",
+        "volume": "80%"
+      },
+      "id": "annotation-000001",
+      "kind": "inline",
+      "spoken_end": 4,
+      "spoken_start": 0,
+      "structural_end": 4,
+      "structural_start": 0
+    }
+  ],
   "boundaries": [],
   "config": {
     "diagnostics": true,
-    "document_format": "plain",
+    "document_format": "ssmd",
     "language": "en-us",
     "language_aliases": {},
     "linguistics": {
@@ -41,24 +68,25 @@
     }
   ],
   "document_metadata": {
+    "header": {},
     "planning": {
       "engine_independent": true,
       "linguistic_passes": 2,
       "pass_a_tokens": 1
     }
   },
-  "format": "ttsplan",
+  "format": "utterplan",
   "languages": [
     {
       "id": "lang-0",
       "language": "en-us",
-      "source": "document-default",
-      "spoken_end": 6,
+      "source": "explicit-span",
+      "spoken_end": 4,
       "spoken_start": 0
     }
   ],
   "markers": [],
-  "plan_id": "sha256:7efb096612fc6909c68e8d9c80fa9d6f04d40b52b4d5f10f30c3b06b01afb353",
+  "plan_id": "sha256:8f9e0342d77491f1dfa04ba406705cbd33105e03abb34ffed30ac286c7d107b8",
   "preparation": {
     "backend": "spokenform",
     "languages": ["en-us"],
@@ -67,15 +95,24 @@
     "warnings": []
   },
   "producer": {
-    "name": "ttsplan",
-    "version": "0.0.dev5+gd834970f9.d19800101"
+    "name": "utterplan",
+    "version": "0.1.0"
   },
   "schema_version": 1,
   "segments": [
     {
-      "annotation_ids": [],
+      "annotation_ids": ["annotation-000000", "annotation-000001"],
       "clause": 0,
-      "directives": {},
+      "directives": {
+        "emphasis": {
+          "level": "strong"
+        },
+        "prosody": {
+          "pitch": "+2st",
+          "rate": "1.2",
+          "volume": "80%"
+        }
+      },
       "id": "seg-000000",
       "language": "en-us",
       "paragraph": 0,
@@ -88,39 +125,39 @@
         "seconds": 0.0
       },
       "sentence": 0,
-      "spoken_end": 6,
+      "spoken_end": 4,
       "spoken_start": 0,
-      "text": "Hello.",
+      "text": "fast",
       "token_indices": [0]
     }
   ],
   "source": {
-    "format": "plain",
-    "text": "Hello."
+    "format": "ssmd",
+    "text": "[fast]{rate=\"1.2\" pitch=\"+2st\" volume=\"80%\" emphasis=\"strong\"}"
   },
   "texts": {
-    "spoken": "Hello.",
-    "structural": "Hello."
+    "spoken": "fast",
+    "structural": "fast"
   },
   "tokens": [
     {
       "id": "token-0",
       "language": "en-us",
-      "lemma": "hello.",
-      "spoken_end": 6,
+      "lemma": "fast",
+      "spoken_end": 4,
       "spoken_start": 0,
-      "text": "Hello."
+      "text": "fast"
     }
   ],
   "units": [
     {
-      "content_hash": "sha256:996ccc6d6dd895dbaee952ecc9ddf74b728909b8709453b20fe0330d2b76948b",
+      "content_hash": "sha256:b8518cae5461facce58d37b8105ad7b76cc6d2b766015520ba579ae2ba42651f",
       "id": "unit-0000",
       "index": 0,
       "kind": "paragraph",
       "marker_ids": [],
       "segment_ids": ["seg-000000"],
-      "spoken_end": 6,
+      "spoken_end": 4,
       "spoken_start": 0
     }
   ],

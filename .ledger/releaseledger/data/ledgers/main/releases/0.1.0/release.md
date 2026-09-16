@@ -3,11 +3,11 @@ schema_version: 2
 object_type: release
 versioning:
   schema_version: 1
-  revision: 5
+  revision: 6
 version: 0.1.0
 status: planned
 history_state: curated
-title: TTSPlan v0.1.0
+title: UtterPlan v0.1.0
 released_at: null
 previous_version: null
 cancel_reason: null
@@ -26,4 +26,4 @@ git_range: null
 git_commit_count: null
 ---
 
-First public alpha release of the engine-independent planning compiler.
+First public alpha release of the engine-independent planning compiler. Project renamed from the unreleased working name TTSPlan to UtterPlan before the first public release.

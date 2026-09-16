@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from ttsplan import PlannerConfig, TTSPlanner
+from utterplan import PlannerConfig, UtterancePlanner
 
 
 def render_semantic_plan(plan: object) -> list[dict[str, object]]:
-    """Minimal engine-neutral consumer using only the public TTSPlan shape."""
+    """Minimal engine-neutral consumer using only the public UtterancePlan shape."""
     segments = {segment.id: segment for segment in plan.segments}  # type: ignore[attr-defined]
     tokens = plan.tokens  # type: ignore[attr-defined]
     annotations = {annotation.id: annotation for annotation in plan.annotations}  # type: ignore[attr-defined]
@@ -32,9 +32,9 @@ def render_semantic_plan(plan: object) -> list[dict[str, object]]:
     return rendered
 
 
-def test_public_ttsplan_is_sufficient_for_a_fake_renderer() -> None:
+def test_public_utterplan_is_sufficient_for_a_fake_renderer() -> None:
     text = '---\nvoice_bindings:\n  narrator: voice-a\n---\n[Hello]{voice="narrator"} @mark'
-    plan = TTSPlanner(PlannerConfig(language="en-us", text_preparation="identity")).plan(text)
+    plan = UtterancePlanner(PlannerConfig(language="en-us", text_preparation="identity")).plan(text)
     rendered = render_semantic_plan(plan)
     assert rendered
     assert rendered[0]["text"] == "Hello"

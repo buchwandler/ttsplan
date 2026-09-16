@@ -3,7 +3,7 @@ requires = ["setuptools>=61", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ttsplan"
+name = "utterplan"
 dynamic = ["version"]
 description = "Engine-independent text-to-speech planning compiler and interchange format"
 readme = "README.md"
@@ -30,23 +30,23 @@ classifiers = [
  ]
 
 [project.urls]
-Homepage = "https://github.com/buchwandler/ttsplan"
-Repository = "https://github.com/buchwandler/ttsplan"
+Homepage = "https://github.com/buchwandler/utterplan"
+Repository = "https://github.com/buchwandler/utterplan"
 
 [project.scripts]
-ttsplan = "ttsplan.cli:main"
+utterplan = "utterplan.cli:main"
 
 [project.optional-dependencies]
 dev = ["build", "jsonschema", "mypy", "pytest", "ruff"]
 docs = ["sphinx>=7.0", "sphinx-rtd-theme>=2.0", "myst-parser>=2.0"]
 [tool.setuptools.packages.find]
-include = ["ttsplan*"]
+include = ["utterplan*"]
 
 [tool.setuptools.package-data]
-ttsplan = ["py.typed", "ttsplan.schema.json"]
+utterplan = ["py.typed", "utterplan.schema.json"]
 
 [tool.setuptools_scm]
-version_file = "ttsplan/_version.py"
+version_file = "utterplan/_version.py"
 version_scheme = "guess-next-dev"
 local_scheme = "node-and-date"
 fallback_version = "0.0.dev0"

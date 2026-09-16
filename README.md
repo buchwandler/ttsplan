@@ -1,11 +1,11 @@
-[![PyPI - Version](https://img.shields.io/pypi/v/ttsplan)](https://pypi.org/project/ttsplan/)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ttsplan)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/ttsplan)
-[![codecov](https://codecov.io/gh/buchwandler/ttsplan/graph/badge.svg?token=cL0qStxvDE)](https://codecov.io/gh/buchwandler/ttsplan)
+[![PyPI - Version](https://img.shields.io/pypi/v/utterplan)](https://pypi.org/project/utterplan/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/utterplan)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/utterplan)
+[![codecov](https://codecov.io/gh/buchwandler/utterplan/graph/badge.svg?token=cL0qStxvDE)](https://codecov.io/gh/buchwandler/utterplan)
 
-# ttsplan
+# UtterPlan
 
-TTSPlan is an engine-independent TTS planning compiler and interchange
+UtterPlan is an engine-independent TTS planning compiler and interchange
 format. It converts text and SSMD into deterministic semantic speech plans
 containing prepared spoken text, language runs, segments, pauses, directives,
 markers, and render units. It stops before G2P and produces no audio.
@@ -15,27 +15,27 @@ markers, and render units. It stops before G2P and produces no audio.
 Compile literal text directly:
 
 ```bash
-ttsplan compile "Doctor Smith bought 5 kg." --lang en-us --json
+utterplan compile "Doctor Smith bought 5 kg." --lang en-us --json
 ```
 
 Compile a file to a plan file:
 
 ```bash
-ttsplan compile chapter.ssmd --lang en-us -o chapter.ttsplan.json
+utterplan compile chapter.ssmd --lang en-us -o chapter.utterplan.json
 ```
 
 Use stdin and shell pipelines:
 
 ```bash
-cat chapter.ssmd | ttsplan compile --lang en-us --input-format ssmd | jq .
+cat chapter.ssmd | utterplan compile --lang en-us --input-format ssmd | jq .
 ```
 
 The CLI also provides:
 
 ```bash
-ttsplan --version
-ttsplan validate chapter.ttsplan.json
-ttsplan inspect chapter.ttsplan.json --segment 0
+utterplan --version
+utterplan validate chapter.utterplan.json
+utterplan inspect chapter.utterplan.json --segment 0
 ```
 
 Compile JSON is written to stdout when no output file is supplied. Status
@@ -43,23 +43,23 @@ messages use stderr, and existing output files require `--force`.
 
 ## Planning defaults
 
-The minimal CLI defaults are explicit: `spokenform` is the default text-preparation backend, `tts` is the default pause mode, and `spacy off` is the default linguistic-resource policy. With `spacy off`, TTSPlan uses its deterministic fallback tokenizer and analysis and does not depend on an installed spaCy model.
+The minimal CLI defaults are explicit: `spokenform` is the default text-preparation backend, `tts` is the default pause mode, and `spacy off` is the default linguistic-resource policy. With `spacy off`, UtterPlan uses its deterministic fallback tokenizer and analysis and does not depend on an installed spaCy model.
 
-`spacy auto` is opt-in. When enabled and a compatible local model is available, TTSPlan may expose richer tokenization, POS tags, lemmas, and tags; `auto` is not the default.
+`spacy auto` is opt-in. When enabled and a compatible local model is available, UtterPlan may expose richer tokenization, POS tags, lemmas, and tags; `auto` is not the default.
 
 ## Python API
 
 ```python
-from ttsplan import PlannerConfig, TTSPlan, TTSPlanner
+from utterplan import PlannerConfig, UtterancePlan, UtterancePlanner
 
-planner = TTSPlanner(PlannerConfig(language="en-us"))
+planner = UtterancePlanner(PlannerConfig(language="en-us"))
 plan = planner.plan("Doctor Smith bought 5 kg of apples.")
-plan.save("example.ttsplan.json")
-assert TTSPlan.load("example.ttsplan.json") == plan
+plan.save("example.utterplan.json")
+assert UtterancePlan.load("example.utterplan.json") == plan
 ```
 
-The stable in-process boundary is `PlannerConfig`, `TTSPlanner`, and the
-immutable `TTSPlan` object. JSON is the portable persistence and interchange
+The stable in-process boundary is `PlannerConfig`, `UtterancePlanner`, and the
+immutable `UtterancePlan` object. JSON is the portable persistence and interchange
 format; an in-process renderer can consume the Python object directly.
 
 ## Renderer-consumer boundary
@@ -73,12 +73,12 @@ tokens, model sessions, renderer configuration, provider documents, or audio.
 The intended dependency direction is:
 
 ```text
-PyKokoro or another renderer -> TTSPlan
+PyKokoro or another renderer -> UtterPlan
 ```
 
-TTSPlan does not depend on PyKokoro, G2P engines, ONNX Runtime, or audio
+UtterPlan does not depend on PyKokoro, G2P engines, ONNX Runtime, or audio
 packages. PyKokoro remains an optional read-only parity reference during
-TTSPlan development.
+UtterPlan development.
 
 ## Documentation
 
@@ -95,7 +95,7 @@ TTSPlan development.
 
 The package version is dynamically derived from Git tags by setuptools-scm. The
 first public alpha package release is `0.1.0`. The package version and
-TTSPlan `schema_version` are independent: this release uses schema version `1`.
+UtterPlan `schema_version` are independent: this release uses schema version `1`.
 
 ## Development
 
@@ -103,7 +103,7 @@ TTSPlan `schema_version` are independent: this release uses schema version `1`.
 python -m pip install -e '.[dev,docs]'
 python -m pytest -q -m 'not reference'
 ruff check .
-mypy ttsplan
+mypy utterplan
 python -m build
 sphinx-build -W --keep-going -b html docs docs/_build/html
 ```

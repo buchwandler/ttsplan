@@ -2,7 +2,7 @@
 
 ## Scope
 
-TTSPlan is a standalone, engine-independent planning compiler ending before
+UtterPlan is a standalone, engine-independent planning compiler ending before
 G2P and synthesis. `../pykokoro` is a read-only parity reference. This
 repository does not modify PyKokoro and does not add renderer, G2P, ONNX, or
 audio dependencies.
@@ -10,7 +10,7 @@ audio dependencies.
 ## Current release contract
 
 - Target package release: `0.1.0`
-- TTSPlan schema version: `1`
+- UtterPlan schema version: `1`
 - PyKokoro parity target: `0.9.8`
 - PyKokoro parity commit: `cc4271515011cbbe8843fc3673393063044c22e9`
 - Tested migration floors: `phrasplit>=0.3.9,<0.4` and
@@ -27,13 +27,13 @@ results.
 python -m pytest -q -m 'not reference'
 pytest -q -m reference
 ruff check .
-mypy ttsplan
+mypy utterplan
 python -m build
 sphinx-build -W --keep-going -b html docs docs/_build/html
 ```
 
 The reference test is optional and runs PyKokoro in a subprocess. It reports
-its tested version, commit, and dependency versions. Native TTSPlan tests must
+its tested version, commit, and dependency versions. Native UtterPlan tests must
 pass without the sibling checkout.
 
 ## Architectural evidence

@@ -3,12 +3,12 @@
 Inspect the plan before inspecting audio:
 
 ```text
-source / SSMD -> document.ttsplan.json -> renderer diagnostics -> audio
+source / SSMD -> document.utterplan.json -> renderer diagnostics -> audio
 ```
 
 If spoken wording is wrong, inspect `texts.spoken` and `preparation`. If language is wrong, inspect `languages` and annotation provenance. If a pause is missing, inspect `boundaries` and segment pause event IDs. If the plan is correct but G2P or audio is wrong, the issue belongs to the renderer or acoustic runtime, not the planning boundary.
 
-`ttsplan inspect FILE --boundaries --tokens` is intentionally human-readable and does not require a renderer.
+`utterplan inspect FILE --boundaries --tokens` is intentionally human-readable and does not require a renderer.
 
 For coordinate bugs, compare a structural annotation range with its mapped spoken range and inspect preparation replacement provenance. The exact coordinate map is transient and unavailable after serialization. For pause bugs, distinguish `origin="ssmd"`, `origin="phrasplit"`, and `origin="planner"`, then inspect the contributing event IDs in `pause_before` or `pause_after`. Automatic clause and parenthetical pauses are mode-dependent; explicit SSMD breaks remain explicit, including zero-duration breaks.
 

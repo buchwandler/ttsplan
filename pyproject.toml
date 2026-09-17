@@ -43,7 +43,7 @@ docs = ["sphinx>=7.0", "sphinx-rtd-theme>=2.0", "myst-parser>=2.0"]
 include = ["utterplan*"]
 
 [tool.setuptools.package-data]
-utterplan = ["py.typed", "utterplan.schema.json"]
+utterplan = ["py.typed", "utterplan.schema.json", "schemas/*.schema.json"]
 
 [tool.setuptools_scm]
 version_file = "utterplan/_version.py"

@@ -1,0 +1,293 @@
+{
+  "annotations": [],
+  "boundaries": [
+    {
+      "attrs": {
+        "anchor": "before",
+        "automatic": true,
+        "detected_kind": "parenthetical_open"
+      },
+      "id": "boundary-000000",
+      "kind": "parenthetical",
+      "origin": "phrasplit",
+      "position": 19,
+      "seconds": null,
+      "strength": "weak"
+    },
+    {
+      "attrs": {
+        "anchor": "before",
+        "automatic": true,
+        "detected_kind": "parenthetical_close"
+      },
+      "id": "boundary-000001",
+      "kind": "parenthetical",
+      "origin": "phrasplit",
+      "position": 53,
+      "seconds": null,
+      "strength": "weak"
+    }
+  ],
+  "config": {
+    "diagnostics": true,
+    "document_format": "plain",
+    "language": "en-us",
+    "language_aliases": {},
+    "linguistics": {
+      "require_spacy": false,
+      "spacy_model": null,
+      "spacy_model_size": null,
+      "use_spacy": null
+    },
+    "overlap_mode": "snap",
+    "pauses": {
+      "clause": 0.3,
+      "enabled": true,
+      "mode": "auto",
+      "paragraph": 1.0,
+      "parenthetical": 0.15,
+      "sentence": 0.6,
+      "voice_change": 0.15,
+      "weak": 0.15
+    },
+    "ssmd": {
+      "parse_header": true,
+      "pause_defaults": null,
+      "strict_header": true,
+      "unknown_header": "warn"
+    },
+    "text_preparation": "spokenform",
+    "unit": "paragraph"
+  },
+  "diagnostics": [
+    {
+      "code": "planning.complete",
+      "message": "Plan compiled without renderer or audio processing",
+      "path": null,
+      "severity": "info"
+    }
+  ],
+  "document_metadata": {
+    "planning": {
+      "engine_independent": true,
+      "linguistic_passes": 2,
+      "pass_a_tokens": 13
+    }
+  },
+  "format": "utterplan",
+  "languages": [
+    {
+      "id": "lang-0",
+      "language": "en-us",
+      "source": "document-default",
+      "spoken_end": 77,
+      "spoken_start": 0
+    }
+  ],
+  "markers": [],
+  "plan_id": "sha256:7fe6a205392b6102bd705d4451188ed54552a1ab77aa40959f42a6a913900814",
+  "preparation": {
+    "backend": "spokenform",
+    "languages": ["en-us"],
+    "replacements": [],
+    "version": "0.4.4.dev0+g71feb9cb4.d19800101",
+    "warnings": []
+  },
+  "producer": {
+    "name": "utterplan",
+    "version": "0.1.0"
+  },
+  "schema_version": 1,
+  "segments": [
+    {
+      "annotation_ids": [],
+      "clause": 0,
+      "directives": {},
+      "id": "seg-000000",
+      "language": "en-us",
+      "paragraph": 0,
+      "pause_after": {
+        "events": [],
+        "seconds": 0.0
+      },
+      "pause_before": {
+        "events": [],
+        "seconds": 0.0
+      },
+      "sentence": 0,
+      "spoken_end": 19,
+      "spoken_start": 0,
+      "text": "The backup battery ",
+      "token_indices": [0, 1, 2]
+    },
+    {
+      "annotation_ids": [],
+      "clause": 0,
+      "directives": {},
+      "id": "seg-000001",
+      "language": "en-us",
+      "paragraph": 0,
+      "pause_after": {
+        "events": [],
+        "seconds": 0.0
+      },
+      "pause_before": {
+        "events": ["boundary-000000"],
+        "seconds": 0.15
+      },
+      "sentence": 0,
+      "spoken_end": 53,
+      "spoken_start": 19,
+      "text": "(still warm from the morning test)",
+      "token_indices": [3, 4, 5, 6, 7, 8]
+    },
+    {
+      "annotation_ids": [],
+      "clause": 0,
+      "directives": {},
+      "id": "seg-000002",
+      "language": "en-us",
+      "paragraph": 0,
+      "pause_after": {
+        "events": [],
+        "seconds": 0.0
+      },
+      "pause_before": {
+        "events": ["boundary-000001"],
+        "seconds": 0.15
+      },
+      "sentence": 0,
+      "spoken_end": 77,
+      "spoken_start": 53,
+      "text": " sat beside the console.",
+      "token_indices": [9, 10, 11, 12]
+    }
+  ],
+  "source": {
+    "format": "plain",
+    "text": "The backup battery (still warm from the morning test) sat beside the console."
+  },
+  "texts": {
+    "spoken": "The backup battery (still warm from the morning test) sat beside the console.",
+    "structural": "The backup battery (still warm from the morning test) sat beside the console."
+  },
+  "tokens": [
+    {
+      "id": "token-0",
+      "language": "en-us",
+      "lemma": "the",
+      "spoken_end": 3,
+      "spoken_start": 0,
+      "text": "The"
+    },
+    {
+      "id": "token-1",
+      "language": "en-us",
+      "lemma": "backup",
+      "spoken_end": 10,
+      "spoken_start": 4,
+      "text": "backup"
+    },
+    {
+      "id": "token-2",
+      "language": "en-us",
+      "lemma": "battery",
+      "spoken_end": 18,
+      "spoken_start": 11,
+      "text": "battery"
+    },
+    {
+      "id": "token-3",
+      "language": "en-us",
+      "lemma": "(still",
+      "spoken_end": 25,
+      "spoken_start": 19,
+      "text": "(still"
+    },
+    {
+      "id": "token-4",
+      "language": "en-us",
+      "lemma": "warm",
+      "spoken_end": 30,
+      "spoken_start": 26,
+      "text": "warm"
+    },
+    {
+      "id": "token-5",
+      "language": "en-us",
+      "lemma": "from",
+      "spoken_end": 35,
+      "spoken_start": 31,
+      "text": "from"
+    },
+    {
+      "id": "token-6",
+      "language": "en-us",
+      "lemma": "the",
+      "spoken_end": 39,
+      "spoken_start": 36,
+      "text": "the"
+    },
+    {
+      "id": "token-7",
+      "language": "en-us",
+      "lemma": "morning",
+      "spoken_end": 47,
+      "spoken_start": 40,
+      "text": "morning"
+    },
+    {
+      "id": "token-8",
+      "language": "en-us",
+      "lemma": "test)",
+      "spoken_end": 53,
+      "spoken_start": 48,
+      "text": "test)"
+    },
+    {
+      "id": "token-9",
+      "language": "en-us",
+      "lemma": "sat",
+      "spoken_end": 57,
+      "spoken_start": 54,
+      "text": "sat"
+    },
+    {
+      "id": "token-10",
+      "language": "en-us",
+      "lemma": "beside",
+      "spoken_end": 64,
+      "spoken_start": 58,
+      "text": "beside"
+    },
+    {
+      "id": "token-11",
+      "language": "en-us",
+      "lemma": "the",
+      "spoken_end": 68,
+      "spoken_start": 65,
+      "text": "the"
+    },
+    {
+      "id": "token-12",
+      "language": "en-us",
+      "lemma": "console.",
+      "spoken_end": 77,
+      "spoken_start": 69,
+      "text": "console."
+    }
+  ],
+  "units": [
+    {
+      "content_hash": "sha256:5903cb139509fff58be1bda1361160ea2302ef02368a8275a67a3c250f1b2c67",
+      "id": "unit-0000",
+      "index": 0,
+      "kind": "paragraph",
+      "marker_ids": [],
+      "segment_ids": ["seg-000000", "seg-000001", "seg-000002"],
+      "spoken_end": 77,
+      "spoken_start": 0
+    }
+  ],
+  "warnings": []
+}

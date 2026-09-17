@@ -1,0 +1,226 @@
+{
+  "annotations": [
+    {
+      "attrs": {
+        "lang": "en-us"
+      },
+      "id": "annotation-000000",
+      "kind": "language",
+      "spoken_end": 18,
+      "spoken_start": 0,
+      "structural_end": 18,
+      "structural_start": 0
+    }
+  ],
+  "boundaries": [
+    {
+      "attrs": {
+        "anchor": "after",
+        "pause_origin": "explicit",
+        "time": "500ms"
+      },
+      "id": "boundary-000000",
+      "kind": "explicit",
+      "origin": "ssmd",
+      "position": 5,
+      "seconds": 0.5,
+      "strength": null
+    },
+    {
+      "attrs": {
+        "anchor": "after",
+        "pause_origin": "none",
+        "strength": "none"
+      },
+      "id": "boundary-000001",
+      "kind": "explicit",
+      "origin": "ssmd",
+      "position": 11,
+      "seconds": null,
+      "strength": "none"
+    }
+  ],
+  "config": {
+    "diagnostics": true,
+    "document_format": "ssmd",
+    "language": "en-us",
+    "language_aliases": {},
+    "linguistics": {
+      "require_spacy": false,
+      "spacy_model": null,
+      "spacy_model_size": null,
+      "use_spacy": null
+    },
+    "overlap_mode": "snap",
+    "pauses": {
+      "clause": 0.3,
+      "enabled": true,
+      "mode": "tts",
+      "paragraph": 1.0,
+      "parenthetical": 0.15,
+      "sentence": 0.6,
+      "voice_change": 0.15,
+      "weak": 0.15
+    },
+    "ssmd": {
+      "parse_header": true,
+      "pause_defaults": null,
+      "strict_header": true,
+      "unknown_header": "warn"
+    },
+    "text_preparation": "spokenform",
+    "unit": "paragraph"
+  },
+  "diagnostics": [
+    {
+      "code": "planning.complete",
+      "message": "Plan compiled without renderer or audio processing",
+      "path": null,
+      "severity": "info"
+    }
+  ],
+  "document_metadata": {
+    "header": {},
+    "planning": {
+      "engine_independent": true,
+      "linguistic_passes": 2,
+      "pass_a_tokens": 3
+    }
+  },
+  "format": "utterplan",
+  "languages": [
+    {
+      "id": "lang-0",
+      "language": "en-us",
+      "source": "explicit-span",
+      "spoken_end": 18,
+      "spoken_start": 0
+    }
+  ],
+  "markers": [],
+  "plan_id": "sha256:14ebfd9170484fe8f3842ed309570671084f6a1c6b4ae9884b14b7bcf5ea527a",
+  "preparation": {
+    "backend": "spokenform",
+    "languages": ["en-us"],
+    "replacements": [],
+    "version": "0.4.4.dev0+g71feb9cb4.d19800101",
+    "warnings": []
+  },
+  "producer": {
+    "name": "utterplan",
+    "version": "0.1.0"
+  },
+  "schema_version": 1,
+  "segments": [
+    {
+      "annotation_ids": ["annotation-000000"],
+      "clause": 0,
+      "directives": {},
+      "id": "seg-000000",
+      "language": "en-us",
+      "paragraph": 0,
+      "pause_after": {
+        "events": ["boundary-000000"],
+        "seconds": 0.5
+      },
+      "pause_before": {
+        "events": [],
+        "seconds": 0.0
+      },
+      "sentence": 0,
+      "spoken_end": 5,
+      "spoken_start": 0,
+      "text": "Hello",
+      "token_indices": [0]
+    },
+    {
+      "annotation_ids": ["annotation-000000"],
+      "clause": 0,
+      "directives": {},
+      "id": "seg-000001",
+      "language": "en-us",
+      "paragraph": 0,
+      "pause_after": {
+        "events": ["boundary-000001"],
+        "seconds": 0.15
+      },
+      "pause_before": {
+        "events": [],
+        "seconds": 0.0
+      },
+      "sentence": 0,
+      "spoken_end": 11,
+      "spoken_start": 5,
+      "text": " world",
+      "token_indices": [1]
+    },
+    {
+      "annotation_ids": ["annotation-000000"],
+      "clause": 0,
+      "directives": {},
+      "id": "seg-000002",
+      "language": "en-us",
+      "paragraph": 0,
+      "pause_after": {
+        "events": [],
+        "seconds": 0.0
+      },
+      "pause_before": {
+        "events": [],
+        "seconds": 0.0
+      },
+      "sentence": 0,
+      "spoken_end": 18,
+      "spoken_start": 11,
+      "text": " again.",
+      "token_indices": [2]
+    }
+  ],
+  "source": {
+    "format": "ssmd",
+    "text": "Hello ...500ms world ...n again."
+  },
+  "texts": {
+    "spoken": "Hello world again.",
+    "structural": "Hello world again."
+  },
+  "tokens": [
+    {
+      "id": "token-0",
+      "language": "en-us",
+      "lemma": "hello",
+      "spoken_end": 5,
+      "spoken_start": 0,
+      "text": "Hello"
+    },
+    {
+      "id": "token-1",
+      "language": "en-us",
+      "lemma": "world",
+      "spoken_end": 11,
+      "spoken_start": 6,
+      "text": "world"
+    },
+    {
+      "id": "token-2",
+      "language": "en-us",
+      "lemma": "again.",
+      "spoken_end": 18,
+      "spoken_start": 12,
+      "text": "again."
+    }
+  ],
+  "units": [
+    {
+      "content_hash": "sha256:086e985a538b58f030dae2309c2dd4d2f530cc0a36134ea2012331e9a971db06",
+      "id": "unit-0000",
+      "index": 0,
+      "kind": "paragraph",
+      "marker_ids": [],
+      "segment_ids": ["seg-000000", "seg-000001", "seg-000002"],
+      "spoken_end": 18,
+      "spoken_start": 0
+    }
+  ],
+  "warnings": []
+}

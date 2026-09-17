@@ -99,6 +99,8 @@ The package version is dynamically derived from Git tags by setuptools-scm. The
 first public alpha package release is `0.1.0`. The package version and
 UtterPlan `schema_version` are independent: this release uses schema version `1`.
 
+Schema v1 is frozen and packaged under a versioned schema-history path. UtterPlan can inspect and migrate supported historical plan JSON before constructing the current `UtterancePlan`; migration is representation conversion, not replanning. The `utterplan migrate` command supports `--check` and refuses output overwrite unless `--force` is supplied.
+
 ## Development
 
 ```bash

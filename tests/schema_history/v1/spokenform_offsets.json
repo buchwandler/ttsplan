@@ -1,0 +1,218 @@
+{
+  "annotations": [],
+  "boundaries": [],
+  "config": {
+    "diagnostics": true,
+    "document_format": "plain",
+    "language": "en-us",
+    "language_aliases": {},
+    "linguistics": {
+      "require_spacy": false,
+      "spacy_model": null,
+      "spacy_model_size": null,
+      "use_spacy": null
+    },
+    "overlap_mode": "snap",
+    "pauses": {
+      "clause": 0.3,
+      "enabled": true,
+      "mode": "tts",
+      "paragraph": 1.0,
+      "parenthetical": 0.15,
+      "sentence": 0.6,
+      "voice_change": 0.15,
+      "weak": 0.15
+    },
+    "ssmd": {
+      "parse_header": true,
+      "pause_defaults": null,
+      "strict_header": true,
+      "unknown_header": "warn"
+    },
+    "text_preparation": "spokenform",
+    "unit": "paragraph"
+  },
+  "diagnostics": [
+    {
+      "code": "planning.complete",
+      "message": "Plan compiled without renderer or audio processing",
+      "path": null,
+      "severity": "info"
+    }
+  ],
+  "document_metadata": {
+    "planning": {
+      "engine_independent": true,
+      "linguistic_passes": 2,
+      "pass_a_tokens": 8
+    }
+  },
+  "format": "utterplan",
+  "languages": [
+    {
+      "id": "lang-0",
+      "language": "en-us",
+      "source": "document-default",
+      "spoken_end": 53,
+      "spoken_start": 0
+    }
+  ],
+  "markers": [],
+  "plan_id": "sha256:d26f14468e0e17a1f571e93b9353c88004191f87e89ddb992d6dfb950df54f70",
+  "preparation": {
+    "backend": "spokenform",
+    "languages": ["en-us"],
+    "replacements": [
+      {
+        "kind": "abbreviation",
+        "language": "en_US",
+        "output_end": 6,
+        "output_start": 0,
+        "replacement": "Doctor",
+        "rule": "abbr:Dr.",
+        "source": "Dr.",
+        "source_end": 3,
+        "source_start": 0
+      },
+      {
+        "kind": "structured",
+        "language": "en",
+        "output_end": 34,
+        "output_start": 20,
+        "replacement": "five kilograms",
+        "rule": "en.quantity",
+        "source": "5 kg",
+        "source_end": 21,
+        "source_start": 17
+      },
+      {
+        "kind": "structured",
+        "language": "en",
+        "output_end": 52,
+        "output_start": 38,
+        "replacement": "January fourth",
+        "rule": "en.date.mdy_text",
+        "source": "Jan. 4",
+        "source_end": 31,
+        "source_start": 25
+      }
+    ],
+    "version": "0.4.4.dev0+g71feb9cb4.d19800101",
+    "warnings": []
+  },
+  "producer": {
+    "name": "utterplan",
+    "version": "0.1.0"
+  },
+  "schema_version": 1,
+  "segments": [
+    {
+      "annotation_ids": [],
+      "clause": 0,
+      "directives": {},
+      "id": "seg-000000",
+      "language": "en-us",
+      "paragraph": 0,
+      "pause_after": {
+        "events": [],
+        "seconds": 0.0
+      },
+      "pause_before": {
+        "events": [],
+        "seconds": 0.0
+      },
+      "sentence": 0,
+      "spoken_end": 53,
+      "spoken_start": 0,
+      "text": "Doctor Smith bought five kilograms on January fourth.",
+      "token_indices": [0, 1, 2, 3, 4, 5, 6, 7]
+    }
+  ],
+  "source": {
+    "format": "plain",
+    "text": "Dr. Smith bought 5 kg on Jan. 4."
+  },
+  "texts": {
+    "spoken": "Doctor Smith bought five kilograms on January fourth.",
+    "structural": "Dr. Smith bought 5 kg on Jan. 4."
+  },
+  "tokens": [
+    {
+      "id": "token-0",
+      "language": "en-us",
+      "lemma": "doctor",
+      "spoken_end": 6,
+      "spoken_start": 0,
+      "text": "Doctor"
+    },
+    {
+      "id": "token-1",
+      "language": "en-us",
+      "lemma": "smith",
+      "spoken_end": 12,
+      "spoken_start": 7,
+      "text": "Smith"
+    },
+    {
+      "id": "token-2",
+      "language": "en-us",
+      "lemma": "bought",
+      "spoken_end": 19,
+      "spoken_start": 13,
+      "text": "bought"
+    },
+    {
+      "id": "token-3",
+      "language": "en-us",
+      "lemma": "five",
+      "spoken_end": 24,
+      "spoken_start": 20,
+      "text": "five"
+    },
+    {
+      "id": "token-4",
+      "language": "en-us",
+      "lemma": "kilograms",
+      "spoken_end": 34,
+      "spoken_start": 25,
+      "text": "kilograms"
+    },
+    {
+      "id": "token-5",
+      "language": "en-us",
+      "lemma": "on",
+      "spoken_end": 37,
+      "spoken_start": 35,
+      "text": "on"
+    },
+    {
+      "id": "token-6",
+      "language": "en-us",
+      "lemma": "january",
+      "spoken_end": 45,
+      "spoken_start": 38,
+      "text": "January"
+    },
+    {
+      "id": "token-7",
+      "language": "en-us",
+      "lemma": "fourth.",
+      "spoken_end": 53,
+      "spoken_start": 46,
+      "text": "fourth."
+    }
+  ],
+  "units": [
+    {
+      "content_hash": "sha256:dcc3968227f8c72d93fd4c9587752464f785091f42b83feb5c897911a5ab5a47",
+      "id": "unit-0000",
+      "index": 0,
+      "kind": "paragraph",
+      "marker_ids": [],
+      "segment_ids": ["seg-000000"],
+      "spoken_end": 53,
+      "spoken_start": 0
+    }
+  ],
+  "warnings": []
+}

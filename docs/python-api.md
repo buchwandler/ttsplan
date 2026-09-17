@@ -63,3 +63,23 @@ The public model also exposes `languages`, `annotations`, `boundaries`,
 Planning and loading failures derive from `utterplan.UtterPlanError`. Important
 public subclasses include `ConfigurationError`, `PlanningError`,
 `PlanFormatError`, `PlanValidationError`, and `UnsupportedSchemaError`.
+`PlanMigrationError` and `MigrationPathError` report migration-specific failures. `UnsupportedSchemaError` remains reserved for a schema newer than the installed package understands.
+
+## Schema migration API
+
+```python
+from utterplan import (
+    CURRENT_SCHEMA_VERSION,
+    MigrationResult,
+    MigrationStep,
+    SUPPORTED_SCHEMA_VERSIONS,
+    migrate_plan_data,
+    migrate_plan_json,
+ )
+
+result: MigrationResult = migrate_plan_data(serialized_mapping)
+assert result.target_version == CURRENT_SCHEMA_VERSION
+plan = UtterancePlan.from_dict(result.data)
+```
+
+Migration functions operate on plain JSON-compatible mappings and never mutate their input. `MigrationResult` records source and target versions, sequential steps, and source and target plan IDs. Current-schema migration is an exact no-op.

@@ -9,7 +9,9 @@ from .config import (
 from .exceptions import (
     ConfigurationError,
     LanguagePlanError,
+    MigrationPathError,
     PlanFormatError,
+    PlanMigrationError,
     PlanningError,
     PlanValidationError,
     SegmentationError,
@@ -18,6 +20,7 @@ from .exceptions import (
     UtterPlanError,
 )
 from .language import LanguageRun, build_language_runs, normalize_language
+from .migration import MigrationResult, MigrationStep, migrate_plan_data, migrate_plan_json
 from .model import (
     AnnotationSpan,
     AudioDirective,
@@ -39,6 +42,12 @@ from .model import (
     VoiceDirective,
 )
 from .planner import UtterancePlanner
+from .versioning import (
+    CURRENT_SCHEMA_VERSION,
+    FORMAT,
+    SCHEMA_VERSION,
+    SUPPORTED_SCHEMA_VERSIONS,
+)
 
 __all__ = [
     "__version__",
@@ -70,6 +79,8 @@ __all__ = [
     "normalize_language",
     "build_language_runs",
     "UtterPlanError",
+    "PlanMigrationError",
+    "MigrationPathError",
     "ConfigurationError",
     "PlanFormatError",
     "PlanValidationError",
@@ -78,4 +89,12 @@ __all__ = [
     "LanguagePlanError",
     "TextPreparationError",
     "SegmentationError",
+    "FORMAT",
+    "SCHEMA_VERSION",
+    "CURRENT_SCHEMA_VERSION",
+    "SUPPORTED_SCHEMA_VERSIONS",
+    "MigrationResult",
+    "MigrationStep",
+    "migrate_plan_data",
+    "migrate_plan_json",
 ]

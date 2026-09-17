@@ -11,9 +11,8 @@ from .config import semantic_config
 from .exceptions import PlanFormatError, PlanValidationError, UnsupportedSchemaError
 from .hashing import semantic_hash, unit_hash_payload
 from .language import LanguageRun
-
-FORMAT = "utterplan"
-SCHEMA_VERSION = 1
+from .migration import migrate_plan_data
+from .versioning import FORMAT, SCHEMA_VERSION
 
 
 def _plain(value: Any) -> Any:
@@ -465,9 +464,10 @@ class UtterancePlan:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> UtterancePlan:
-        _check_shape(data)
+        migrated = migrate_plan_data(data)
+        _check_shape(migrated.data)
         try:
-            plan = _from_dict(data)
+            plan = _from_current_dict(migrated.data)
         except (KeyError, TypeError, ValueError, IndexError) as exc:
             raise PlanFormatError(f"invalid plan value: {exc}", code="plan.value") from exc
         plan.validate()
@@ -646,7 +646,7 @@ def _optional_int(value: Any) -> int | None:
     return int(value)
 
 
-def _from_dict(data: Mapping[str, Any]) -> UtterancePlan:
+def _from_current_dict(data: Mapping[str, Any]) -> UtterancePlan:
     source = data["source"]
     texts = data["texts"]
     prep = data["preparation"]

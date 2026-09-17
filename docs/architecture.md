@@ -17,3 +17,28 @@ Linguistic analysis and provider documents are request-local. Returned plans con
 Pause events retain provenance and resolved event IDs. Pause defaults are normalized to finite seconds with explicit precedence, and segments expose resolved base pauses directly. Logical voices are intent references; document `voice_bindings` metadata remains separate and no concrete engine voice is selected.
 
 Plan identity is deterministic and renderer-independent. Unit hashes include ordered segment semantics, resolved pauses, and marker content. Diagnostics and producer metadata do not define semantic identity. Package version is derived from Git tags by setuptools-scm and is independent of the explicit UtterPlan `schema_version`.
+
+## Persistence compatibility boundary
+
+```text
+                         .utterplan.json
+                                |
+                                v
+                       inspect schema version
+                                |
+                    +-----------+-----------+
+                    |                       |
+                 current                    old
+                    |                       |
+                    |                 migration chain
+                    |                       |
+                    +-----------+-----------+
+                                |
+                                v
+                      current UtterancePlan
+                                |
+                                v
+                            renderer
+```
+
+Migration is not planning. UtterPlan owns persistence, schema validation, and migration. Renderers consume only the current in-memory `UtterancePlan` and do not implement historical schema branches.

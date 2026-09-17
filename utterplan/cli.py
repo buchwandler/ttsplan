@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from typing import Literal, cast
 
 from . import PlannerConfig, UtterancePlan, UtterancePlanner, __version__
 from .config import LinguisticsConfig, PauseConfig
-from .exceptions import UtterPlanError
+from .exceptions import PlanFormatError, UtterPlanError
 from .explain import format_explanation
+from .migration import MigrationResult, migrate_plan_data
 
 InputFormat = Literal["plain", "ssmd"]
 
@@ -20,6 +22,8 @@ _EXAMPLES = """examples:
   utterplan validate chapter.utterplan.json
   utterplan inspect chapter.utterplan.json --segment 0
   utterplan explain chapter.utterplan.json
+  utterplan migrate old.utterplan.json -o current.utterplan.json
+  utterplan migrate old.utterplan.json --check
 """
 
 
@@ -83,6 +87,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate_parser = commands.add_parser("validate", help="validate a saved TTS plan")
     validate_parser.add_argument("input", type=Path)
+
+    migrate_parser = commands.add_parser(
+        "migrate", help="migrate a saved plan to the current schema"
+    )
+    migrate_parser.add_argument("input", type=Path)
+    migrate_parser.add_argument("-o", "--output", type=Path)
+    migrate_parser.add_argument("--force", action="store_true", help="replace an existing output file")
+    migrate_parser.add_argument(
+        "--check", action="store_true", help="check migration feasibility without writing"
+    )
 
     explain_parser = commands.add_parser(
         "explain", help="explain a saved TTS plan in human-readable form"
@@ -194,20 +208,70 @@ def _compile(args: argparse.Namespace) -> int:
     return 0
 
 
+def _migration_result(path: Path) -> MigrationResult:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise PlanFormatError(str(exc), code="json.invalid") from exc
+    return migrate_plan_data(value)
+
+
+def _migration_steps(result: MigrationResult) -> str:
+    return " -> ".join(
+        [str(result.source_version), *(str(step.target_version) for step in result.steps)]
+    )
+
+
+def _migrate(args: argparse.Namespace) -> int:
+    result = _migration_result(args.input)
+    steps = _migration_steps(result)
+    if args.check:
+        print("valid migration path")
+        print(f"source schema: {result.source_version}")
+        print(f"target schema: {result.target_version}")
+        print(f"migration required: {'yes' if result.changed else 'no'}")
+        if result.steps:
+            print(f"steps: {steps}")
+        return 0
+    payload = json.dumps(
+        result.data, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False
+    ) + "\n"
+    if args.output is None:
+        print(payload, end="")
+    else:
+        if args.output.exists() and not args.force:
+            raise ValueError(f"output exists: {args.output}; use --force to replace it")
+        args.output.write_text(payload, encoding="utf-8")
+        print(
+            f"migrated {args.input} (schema {result.source_version} -> {result.target_version})",
+            file=sys.stderr,
+        )
+    return 0
+
+
+def _validate(path: Path) -> int:
+    result = _migration_result(path)
+    plan = UtterancePlan.from_dict(result.data)
+    print("valid")
+    print(f"source schema version: {result.source_version}")
+    print(f"current schema version: {plan.schema_version}")
+    print(f"migration required: {'yes' if result.changed else 'no'}")
+    print(f"plan ID: {plan.plan_id}")
+    print(f"segments: {len(plan.segments)}")
+    print(f"units: {len(plan.units)}")
+    print(f"warnings: {len(plan.warnings)}")
+    return 0
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         if args.command == "compile":
             return _compile(args)
-        plan = UtterancePlan.load(args.input)
+        if args.command == "migrate":
+            return _migrate(args)
         if args.command == "validate":
-            print("valid")
-            print(f"schema version: {plan.schema_version}")
-            print(f"plan ID: {plan.plan_id}")
-            print(f"segments: {len(plan.segments)}")
-            print(f"units: {len(plan.units)}")
-            print(f"warnings: {len(plan.warnings)}")
-            return 0
+            return _validate(args.input)
+        plan = UtterancePlan.load(args.input)
         if args.command == "explain":
             print(format_explanation(plan, details=args.details), end="")
             return 0
@@ -217,8 +281,6 @@ def main(argv: list[str] | None = None) -> int:
         print(str(exc), file=sys.stderr)
         return 1
 
-    print(f"UtterPlan schema {plan.schema_version}")
-    print(f"Plan: {plan.plan_id}")
 
 
 def _inspect(plan: UtterancePlan, args: argparse.Namespace) -> None:

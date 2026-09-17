@@ -9,7 +9,7 @@ The top-level semantic categories are source, config, texts, preparation, langua
 Pauses contain both resolved seconds and contributing boundary IDs. Boundary records preserve kind, origin, strength, and position so a plan can answer why a renderer should pause. Directives are typed semantic requests for voice, pronunciation, prosody, emphasis, and external audio metadata.
 
 The `preparation` object is compact provenance rather than working memory. It contains `backend`, nullable `version`, `languages`, `replacements`, and `warnings`. Canonical structural and spoken text remain in `texts`, so `source_text`, `spoken_text`, `offset_map`, and dense lookup arrays are not serialized. Null token metadata and absent segment structural ranges are omitted; inactive segment directives serialize as `{}`.
-Readers reject unsupported schema versions rather than guessing. Unknown top-level semantic fields are not accepted by the v1 schema. Extensions belong in documented metadata dictionaries.
+Readers reject future or unavailable schema versions rather than guessing. Supported historical versions are migrated before current-model decoding. Unknown top-level semantic fields are not accepted by the v1 schema. Extensions belong in documented metadata dictionaries.
 
 ## Coordinate and provenance rules
 
@@ -17,3 +17,17 @@ Annotations retain `structural_start` and `structural_end` in `texts.structural`
 
 Automatic parenthetical boundary positions use spoken-text coordinates. A `parenthetical_open` boundary is at the opening parenthesis and has `attrs.anchor` set to `before`. A `parenthetical_close` boundary is immediately after the closing parenthesis and also has `attrs.anchor` set to `before`, so the closing pause belongs before the resumed host segment. Detected automatic boundaries may remain in `plan.boundaries` for provenance while not affecting `segments`, `pause_before`, or `pause_after` when the active pause policy disables them.
 The planner validates nested JSON shapes before constructing objects. It rejects malformed field types instead of coercing values, and validates range, ordering, reference, unit membership, hash, and plan identity invariants.
+
+## Schema versioning and migration
+
+Schema version 1 is the current serialized format. The package version is independent from the plan schema version. The immutable v1 definition is retained at `spec/schemas/v1.schema.json` and `utterplan/schemas/v1.schema.json`; the unversioned schema files are current-schema aliases.
+
+Every supported historical plan is routed by its declared schema version before current model construction. Migration is a deterministic representation conversion over plain JSON data. It does not rerun SSMD parsing, spokenform, phrasplit, linguistic analysis, planning, G2P, or rendering. Replanning from `source.text` is a separate operation and may produce different segmentation, pauses, languages, and IDs.
+
+`UtterancePlan.from_dict`, `from_json`, and `load` accept supported historical plans and return the current in-memory model. Future schema versions fail with `UnsupportedSchemaError`; missing backward links fail with a migration-specific path error. Downgrades are not supported.
+
+A migration may assign a new `plan_id` because identity is canonical to the representation and schema version. When a real migration occurs, the original schema version and plan ID are retained in non-semantic `producer.migration` provenance. Migration provenance does not affect semantic identity.
+
+Plan schema version and unit hash schema are independent. The current unit hash identifier is `utterplan-unit-v1` and is not changed merely because a future plan schema changes.
+
+Released schema files and historical fixtures are immutable. A future schema release requires a new frozen schema resource, a sequential migration step, historical fixture coverage, deterministic migration evidence, current semantic validation, and package coverage for all supported schemas.

@@ -249,3 +249,50 @@ def test_explain_invalid_plan_returns_one_without_traceback(
     assert captured.out == ""
     assert "format.invalid" in captured.err
     assert "Traceback" not in captured.err
+
+def test_migrate_check_current_plan(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    source = tmp_path / "current.json"
+    assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(source)]) == 0
+    capsys.readouterr()
+    assert main(["migrate", str(source), "--check"]) == 0
+    captured = capsys.readouterr()
+    assert "valid migration path" in captured.out
+    assert "source schema: 1" in captured.out
+    assert "migration required: no" in captured.out
+    assert source.exists()
+
+
+def test_migrate_stdout_and_output_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    source = tmp_path / "current.json"
+    destination = tmp_path / "copy.json"
+    assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(source)]) == 0
+    capsys.readouterr()
+    assert main(["migrate", str(source)]) == 0
+    assert json.loads(capsys.readouterr().out)["schema_version"] == 1
+    assert main(["migrate", str(source), "-o", str(destination)]) == 0
+    assert "migrated" in capsys.readouterr().err
+    assert json.loads(destination.read_text(encoding="utf-8"))["format"] == "utterplan"
+
+
+def test_migrate_refuses_existing_output_without_force(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    source = tmp_path / "current.json"
+    destination = tmp_path / "copy.json"
+    destination.write_text("sentinel", encoding="utf-8")
+    assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(source)]) == 0
+    capsys.readouterr()
+    assert main(["migrate", str(source), "-o", str(destination)]) == 1
+    assert "--force" in capsys.readouterr().err
+    assert destination.read_text(encoding="utf-8") == "sentinel"
+
+
+def test_validate_reports_migration_status(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    source = tmp_path / "current.json"
+    assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(source)]) == 0
+    capsys.readouterr()
+    assert main(["validate", str(source)]) == 0
+    captured = capsys.readouterr()
+    assert "source schema version: 1" in captured.out
+    assert "current schema version: 1" in captured.out
+    assert "migration required: no" in captured.out

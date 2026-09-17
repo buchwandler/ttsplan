@@ -88,3 +88,17 @@ utterplan inspect chapter.utterplan.json --preparation
 ```
 
 `inspect --preparation` reports the preparation backend and version, structural and spoken text lengths, replacement count, and each replacement's structural and spoken ranges and text. This is the supported human-facing preparation diagnostic; raw coordinate lookup tables are intentionally absent from plan JSON.
+
+## Migrate a saved plan
+
+Migrate a supported saved plan to the current schema without rerunning planning:
+
+```bash
+utterplan migrate old.utterplan.json -o current.utterplan.json
+utterplan migrate old.utterplan.json --check
+utterplan migrate old.utterplan.json | jq .
+```
+
+Without `-o`, migrated JSON is written to stdout. Status is written to stderr. Existing output files are refused unless `--force` is supplied. `--check` validates the route and reports source schema, target schema, and whether migration is required without writing a file. A future schema version is rejected rather than guessed or downgraded.
+
+`validate` performs the same in-memory compatibility check and reports both source and current schema versions. It never modifies the input file.

@@ -76,6 +76,7 @@ jobs:
           names = set(ZipFile(wheel).namelist())
           assert "utterplan/py.typed" in names
           assert "utterplan/utterplan.schema.json" in names
+          assert "utterplan/schemas/v1.schema.json" in names
           PY
       - name: Install wheel in clean environment
         run: |
@@ -90,5 +91,7 @@ jobs:
           "$RUNNER_TEMP/utterplan-wheel-venv/bin/utterplan" compile \
             "Doctor Smith bought 5 kg." --lang en-us --json > "$RUNNER_TEMP/utterplan.json"
           "$RUNNER_TEMP/utterplan-wheel-venv/bin/utterplan" validate "$RUNNER_TEMP/utterplan.json"
+          "$RUNNER_TEMP/utterplan-wheel-venv/bin/utterplan" migrate \
+            "$GITHUB_WORKSPACE/tests/schema_history/v1/basic.json" --check
           "$RUNNER_TEMP/utterplan-wheel-venv/bin/utterplan" inspect \
             "$RUNNER_TEMP/utterplan.json" --segment 0

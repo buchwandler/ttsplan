@@ -3,12 +3,12 @@ schema_version: 2
 object_type: release
 versioning:
   schema_version: 1
-  revision: 6
+  revision: 9
 version: 0.1.0
-status: planned
+status: released
 history_state: curated
 title: UtterPlan v0.1.0
-released_at: null
+released_at: "2026-09-16"
 previous_version: null
 cancel_reason: null
 superseded_by: null

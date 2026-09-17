@@ -250,6 +250,7 @@ def test_explain_invalid_plan_returns_one_without_traceback(
     assert "format.invalid" in captured.err
     assert "Traceback" not in captured.err
 
+
 def test_migrate_check_current_plan(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     source = tmp_path / "current.json"
     assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(source)]) == 0
@@ -287,7 +288,9 @@ def test_migrate_refuses_existing_output_without_force(
     assert destination.read_text(encoding="utf-8") == "sentinel"
 
 
-def test_validate_reports_migration_status(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_validate_reports_migration_status(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     source = tmp_path / "current.json"
     assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(source)]) == 0
     capsys.readouterr()

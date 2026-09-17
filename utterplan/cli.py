@@ -93,7 +93,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     migrate_parser.add_argument("input", type=Path)
     migrate_parser.add_argument("-o", "--output", type=Path)
-    migrate_parser.add_argument("--force", action="store_true", help="replace an existing output file")
+    migrate_parser.add_argument(
+        "--force", action="store_true", help="replace an existing output file"
+    )
     migrate_parser.add_argument(
         "--check", action="store_true", help="check migration feasibility without writing"
     )
@@ -233,9 +235,10 @@ def _migrate(args: argparse.Namespace) -> int:
         if result.steps:
             print(f"steps: {steps}")
         return 0
-    payload = json.dumps(
-        result.data, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False
-    ) + "\n"
+    payload = (
+        json.dumps(result.data, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False)
+        + "\n"
+    )
     if args.output is None:
         print(payload, end="")
     else:
@@ -262,6 +265,7 @@ def _validate(path: Path) -> int:
     print(f"warnings: {len(plan.warnings)}")
     return 0
 
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
@@ -280,7 +284,6 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, UtterPlanError, ValueError, TypeError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
-
 
 
 def _inspect(plan: UtterancePlan, args: argparse.Namespace) -> None:

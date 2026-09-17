@@ -1,0 +1,1740 @@
+ docs/cli.md                                        |   1 -
+ docs/consumer-guide.md                             |  16 ++
+ docs/phase-a-completion.md                         |   3 +-
+ docs/pykokoro-reference.md                         |  85 ++++----
+ spec/utterplan.schema.json                         |  20 +-
+ tests/migration/__init__.py                        |   0
+ tests/migration/cases.py                           |  58 ++++++
+ .../goldens/multilingual_preparation.json          |  29 +++
+ tests/migration/goldens/spokenform_numbers.json    |   6 +
+ tests/migration/goldens/ssmd_break.json            |  47 +++++
+ .../migration/goldens/ssmd_language_detection.json |   4 +
+ tests/migration/goldens/ssmd_marker.json           |  15 ++
+ tests/migration/goldens/ssmd_pronunciation.json    |  35 ++++
+ tests/migration/test_pykokoro_frontend_parity.py   | 110 ++++++++++
+ tests/reference/dump_pykokoro_frontend.py          | 217 +++++++++++++++----
+ tests/reference/test_pykokoro_parity.py            | 231 +++++++++++++++++----
+ tests/test_consumer_contract.py                    |  40 ++++
+ tests/test_consumer_readiness.py                   |  23 ++
+ tests/test_directives.py                           |  71 +++++++
+ tests/test_explain.py                              |   6 +-
+ tests/test_pauses.py                               |  59 ++++++
+ utterplan/cli.py                                   |   1 -
+ utterplan/directives.py                            |  53 +++--
+ utterplan/explain.py                               |   6 +-
+ utterplan/model.py                                 |  11 +
+ utterplan/parsers.py                               |  41 +++-
+ utterplan/planner.py                               |  64 +++++-
+ utterplan/utterplan.schema.json                    |  20 +-
+ 28 files changed, 1119 insertions(+), 153 deletions(-)
+
+diff --git a/docs/cli.md b/docs/cli.md
+index 03aeea1..71eec14 100644
+--- a/docs/cli.md
++++ b/docs/cli.md
+@@ -62,7 +62,6 @@ utterplan explain chapter.utterplan.json --details
+
+ The default output shows the prepared wording, render units, ordered segments, languages, resolved pauses, directives, markers, and warnings. Add `--details` for IDs, offsets, provenance, hashes, and plan identity information. Use `inspect` instead when you need raw fields such as tokens, boundaries, or a specific segment.
+
+-
+ ## Planning controls
+
+ - `--unit paragraph|sentence` chooses render-unit grouping.
+diff --git a/docs/consumer-guide.md b/docs/consumer-guide.md
+index 0b9e037..55ce565 100644
+--- a/docs/consumer-guide.md
++++ b/docs/consumer-guide.md
+@@ -37,6 +37,22 @@ Voice bindings are logical names, not backend voice IDs. Consumers must not
+ recompute pause policy, resolve engine voices in UtterPlan, or depend on provider
+ documents that were used during planning.
+
++## Stable renderer input view
++
++Consumers may rely on these plan-level fields: `texts.spoken`, `preparation`, `languages`, `tokens`, `annotations`, `boundaries`, `segments`, `units`, `markers`, and `document_metadata`. Each segment additionally provides its ID, spoken text range, language, paragraph/sentence/clause ownership, resolved pauses, typed directives, token indices, and annotation IDs.
++
++A completed plan is immutable consumer input. Consumers may inspect and adapt the data for G2P or rendering, but must not rewrite planning decisions or mutate the plan. The canonical invariant is:
++
++```python
++before = plan.to_json(indent=None)
++plan_id = plan.plan_id
++consume_plan(plan)
++assert plan.to_json(indent=None) == before
++assert plan.plan_id == plan_id
++```
++
++This contract does not require provider documents, models, phonemes, model token IDs, or audio to remain available after planning.
++
+ ## Renderer-neutral pseudocode
+
+ ```python
+diff --git a/docs/phase-a-completion.md b/docs/phase-a-completion.md
+index 841056e..3ef1fa0 100644
+--- a/docs/phase-a-completion.md
++++ b/docs/phase-a-completion.md
+@@ -11,8 +11,7 @@ audio dependencies.
+
+ - Target package release: `0.1.0`
+ - UtterPlan schema version: `1`
+-- PyKokoro parity target: `0.9.8`
+-- PyKokoro parity commit: `cc4271515011cbbe8843fc3673393063044c22e9`
++- PyKokoro parity target: the supplied sibling checkout at `../pykokoro`
+ - Tested migration floors: `phrasplit>=0.3.9,<0.4` and
+   `spokenform>=0.4.3,<0.5`
+
+diff --git a/docs/pykokoro-reference.md b/docs/pykokoro-reference.md
+index 5b9e9f0..60e04f8 100644
+--- a/docs/pykokoro-reference.md
++++ b/docs/pykokoro-reference.md
+@@ -2,53 +2,56 @@
+
+ The sibling `../pykokoro` checkout is a read-only migration oracle. The normal
+ UtterPlan package never imports it. The optional reference test invokes the
+-frontend helper in a subprocess and compares normalized, engine-neutral
+-semantics.
++frontend helper in a subprocess and records the PyKokoro version, Git revision,
++and dependency versions on every run.
+
+ ## Tested snapshot
+
+-The current parity run used:
+-
+-- PyKokoro version: `0.9.8`
+-- PyKokoro commit: `cc4271515011cbbe8843fc3673393063044c22e9`
+-- `phrasplit`: `0.3.9`
+-- `spokenform`: `0.4.4.dev0+g71feb9cb4.d19800101`
+-- `ssmd`: `0.8.7`
+-
+-The corpus includes abbreviations, units and numbers, multilingual spans,
+-parentheticals, multiple paragraphs, explicit breaks, markers, pronunciation
+-annotations, quoted sentence boundaries, punctuation, Unicode, and empty
+-input. The helper reports the version, revision, and dependency versions with
+-each run so the evidence can be refreshed without hard-coded test counts.
+-
+-## Comparison policy
+-
+-The helper emits normalized structural text, spoken text, preparation records,
+-annotations, boundaries, and frontend segments. The parity test requires exact
+-spoken text and compares non-whitespace segment content. It compares language
+-and paragraph ownership when segment counts align, normalizing language tags
+-such as `fr` and `fr-fr` to their base language. Provider-specific segment
+-splits and whitespace-only records are normalized away.
+-
+-Annotation counts are compared after normalizing provider-specific annotation
+-kind names. Typed UtterPlan directives, resolved pauses, marker ownership, and
+-unit records remain UtterPlan-native consumer contract behavior.
+-
+-| Behavior                      | PyKokoro representation        | UtterPlan representation                 | Policy                                                   |
+-| ----------------------------- | ------------------------------ | ---------------------------------------- | -------------------------------------------------------- |
+-| Written-to-spoken preparation | Provider preparation object    | `TextPreparationInfo` and `texts.spoken` | Compare spoken text and normalized replacements          |
+-| Segment text                  | Provider frontend segments     | `PlanSegment.text`                       | Compare non-whitespace content                           |
+-| Language                      | Provider language metadata     | `PlanSegment.language`                   | Compare base language when aligned                       |
+-| Coordinates                   | Provider offsets               | Spoken and structural documented ranges  | Compare normalized content and validate UtterPlan ranges |
+-| Pauses                        | Provider boundary handling     | `ResolvedPause` plus `BoundaryEvent`     | Keep deterministic UtterPlan semantics                   |
+-| Provider documents            | Request-local frontend objects | Released before plan construction        | Do not retain provider objects                           |
+-| Phonemes and audio            | Renderer-specific              | Not present                              | Out of scope                                             |
++The tested snapshot is discovered dynamically. No PyKokoro version, commit, or
++fixture count is a hard-coded parity requirement. The helper reports the actual
++values in its JSON output so a refreshed sibling checkout produces auditable
++evidence.
++
++The corpus includes plain text, spokenform preparation, multilingual spans,
++parentheticals, paragraphs, explicit breaks, markers, pronunciation, prosody,
++audio metadata, logical voices, quoted sentence boundaries, punctuation,
++Unicode, empty input, and language detection metadata.
++
++## Strict comparison policy
++
++The migration parity test compares the renderer-facing semantic contract:
++
++- exact spoken text;
++- ordered segment text, spoken offsets, language, paragraph, sentence, and
++  clause ownership;
++- language runs;
++- annotation spoken ranges and portable attributes;
++- explicit and derived boundary positions, provenance, and resolved duration;
++- marker position and ownership;
++- unit ranges and segment composition.
++
++Only documented normalizations are applied. Provider-specific annotation kind
++names, concrete voice resolution metadata, whitespace-only segment records, and
++language spelling variants such as `fr` and `fr-fr` are normalized. UtterPlan
++remains the authority for typed directives, final pause ownership, and immutable
++unit records.
++
++| Behavior                      | PyKokoro representation             | UtterPlan representation                    |
++| ----------------------------- | ----------------------------------- | ------------------------------------------- |
++| Written-to-spoken preparation | Provider preparation object         | `TextPreparationInfo` and `texts.spoken`    |
++| Segment content               | Frontend segments                   | `PlanSegment.text` and spoken offsets       |
++| Language                      | Prepared language runs              | `plan.languages` and `PlanSegment.language` |
++| Directives                    | Portable SSMD annotation attributes | Typed `SegmentDirectives`                   |
++| Pauses                        | Boundary events                     | `BoundaryEvent` and resolved segment pauses |
++| Markers and units             | Frontend boundary and unit grouping | `Marker` and `PlanUnit`                     |
++| Provider documents            | Request-local objects               | Released before plan construction           |
++| Phonemes and audio            | Renderer-specific                   | Out of scope for UtterPlan                  |
+
+ Run the optional suite with:
+
+ ```bash
+-pytest -q -m reference
++python -m pytest -q -m reference
+ ```
+
+-A missing sibling checkout skips the reference test. Native tests must remain
+-usable without PyKokoro.
++A missing sibling checkout skips the reference test. Native tests remain usable
++without PyKokoro.
+diff --git a/spec/utterplan.schema.json b/spec/utterplan.schema.json
+index 0bc2385..60f2b3a 100644
+--- a/spec/utterplan.schema.json
++++ b/spec/utterplan.schema.json
+@@ -57,7 +57,13 @@
+     "segments": { "type": "array", "items": { "$ref": "#/$defs/segment" } },
+     "units": { "type": "array", "items": { "$ref": "#/$defs/unit" } },
+     "markers": { "type": "array", "items": { "$ref": "#/$defs/marker" } },
+-    "document_metadata": { "type": "object" },
++    "document_metadata": {
++      "type": "object",
++      "properties": {
++        "language_detection": { "$ref": "#/$defs/language_detection" }
++      },
++      "additionalProperties": true
++    },
+     "warnings": { "type": "array", "items": { "type": "string" } },
+     "diagnostics": {
+       "type": "array",
+@@ -88,6 +94,18 @@
+       "additionalProperties": false
+     },
+     "range": { "type": "integer", "minimum": 0 },
++    "language_detection": {
++      "type": "object",
++      "required": ["mode", "languages"],
++      "properties": {
++        "mode": { "type": "string", "minLength": 1 },
++        "languages": {
++          "type": "array",
++          "items": { "type": "string", "minLength": 1 }
++        }
++      },
++      "additionalProperties": false
++    },
+     "language": {
+       "type": "object",
+       "required": ["id", "spoken_start", "spoken_end", "language", "source"],
+diff --git a/tests/migration/__init__.py b/tests/migration/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tests/migration/cases.py b/tests/migration/cases.py
+new file mode 100644
+index 0000000..fd08333
+--- /dev/null
++++ b/tests/migration/cases.py
+@@ -0,0 +1,58 @@
++from __future__ import annotations
++
++from dataclasses import dataclass
++
++from utterplan import PauseConfig, PlannerConfig
++
++
++@dataclass(frozen=True)
++class MigrationCase:
++    name: str
++    text: str
++    config: PlannerConfig
++
++
++PLAIN = PlannerConfig(language="en-us", document_format="plain")
++IDENTITY = PlannerConfig(language="en-us", document_format="plain", text_preparation="identity")
++AUTO = PlannerConfig(language="en-us", document_format="plain", pauses=PauseConfig(mode="auto"))
++SSMD = PlannerConfig(language="en-us")
++SSMD_IDENTITY = PlannerConfig(language="en-us", text_preparation="identity")
++
++CASES = (
++    MigrationCase("plain_single", "A single sentence.", PLAIN),
++    MigrationCase("plain_sentences", "One sentence. Two sentences.", PLAIN),
++    MigrationCase("plain_paragraphs", "First paragraph.\n\nSecond paragraph.", PLAIN),
++    MigrationCase("plain_empty", "", PLAIN),
++    MigrationCase("plain_whitespace", "  \n  ", PLAIN),
++    MigrationCase("plain_unicode_punctuation", "Café déjà vu. Привет мир.", PLAIN),
++    MigrationCase("plain_quotation", 'She said, "Hello." Then left.', PLAIN),
++    MigrationCase("spokenform_numbers", "Dr. Smith bought 5 kg.", SSMD),
++    MigrationCase("spokenform_date_time", "The meeting is on 2024-05-12 at 10:30.", SSMD),
++    MigrationCase("spokenform_abbreviation", "Prof. Jones called at 8 p.m.", SSMD),
++    MigrationCase("multilingual_preparation", 'Hello [Bonjour]{lang="fr"}.', SSMD),
++    MigrationCase("clausal_comma", "When ready, begin the test.", AUTO),
++    MigrationCase("parenthetical", "The battery (still warm) worked.", AUTO),
++    MigrationCase("ssmd_language", 'Hello [Bonjour]{lang="fr"}.', SSMD_IDENTITY),
++    MigrationCase("ssmd_pronunciation", '[GIF]{ph="dʒɪf"}.', SSMD_IDENTITY),
++    MigrationCase("ssmd_voice", '[Hello]{voice="narrator"}.', SSMD_IDENTITY),
++    MigrationCase(
++        "ssmd_header_voice",
++        '---\nvoice_bindings:\n  narrator: voice-a\n---\n[Hello]{voice="narrator"}.',
++        SSMD_IDENTITY,
++    ),
++    MigrationCase("ssmd_prosody", '[fast]{rate="1.2" pitch="+2st" volume="80%"}.', SSMD_IDENTITY),
++    MigrationCase("ssmd_emphasis", '[important]{emphasis="strong"}.', SSMD_IDENTITY),
++    MigrationCase("ssmd_audio", '[sound]{src="clip.wav" alt_text="sound"}.', SSMD_IDENTITY),
++    MigrationCase("ssmd_break", "Hello ...c world", SSMD_IDENTITY),
++    MigrationCase("ssmd_marker", "One. @mark Two.", SSMD_IDENTITY),
++    MigrationCase(
++        "ssmd_pause_defaults",
++        "---\npause_defaults:\n  sentence: 400ms\n---\nOne. Two.",
++        SSMD_IDENTITY,
++    ),
++    MigrationCase(
++        "ssmd_language_detection",
++        "---\nlanguage_detection:\n  mode: auto\n  languages: [de, en]\n---\nHallo.",
++        SSMD_IDENTITY,
++    ),
++)
+diff --git a/tests/migration/goldens/multilingual_preparation.json b/tests/migration/goldens/multilingual_preparation.json
+new file mode 100644
+index 0000000..f0ff624
+--- /dev/null
++++ b/tests/migration/goldens/multilingual_preparation.json
+@@ -0,0 +1,29 @@
++{
++  "texts": {
++    "structural": "Hello Bonjour.",
++    "spoken": "Hello Bonjour."
++  },
++  "languages": [
++    {
++      "id": "lang-0",
++      "language": "en-us",
++      "source": "explicit-span",
++      "spoken_end": 6,
++      "spoken_start": 0
++    },
++    {
++      "id": "lang-1",
++      "language": "fr",
++      "source": "explicit-span",
++      "spoken_end": 13,
++      "spoken_start": 6
++    },
++    {
++      "id": "lang-2",
++      "language": "en-us",
++      "source": "explicit-span",
++      "spoken_end": 14,
++      "spoken_start": 13
++    }
++  ]
++}
+diff --git a/tests/migration/goldens/spokenform_numbers.json b/tests/migration/goldens/spokenform_numbers.json
+new file mode 100644
+index 0000000..0f2768b
+--- /dev/null
++++ b/tests/migration/goldens/spokenform_numbers.json
+@@ -0,0 +1,6 @@
++{
++  "texts": {
++    "structural": "Dr. Smith bought 5 kg.",
++    "spoken": "Doctor Smith bought five kilograms."
++  }
++}
+diff --git a/tests/migration/goldens/ssmd_break.json b/tests/migration/goldens/ssmd_break.json
+new file mode 100644
+index 0000000..992e0e8
+--- /dev/null
++++ b/tests/migration/goldens/ssmd_break.json
+@@ -0,0 +1,47 @@
++{
++  "texts": { "structural": "Hello world", "spoken": "Hello world" },
++  "boundaries": [
++    {
++      "position": 5,
++      "kind": "explicit",
++      "seconds": 0.3,
++      "origin": "ssmd",
++      "strength": "medium",
++      "attrs": {
++        "anchor": "after",
++        "pause_origin": "planner_default",
++        "strength": "medium"
++      }
++    }
++  ],
++  "segments": [
++    {
++      "text": "Hello",
++      "spoken_start": 0,
++      "spoken_end": 5,
++      "language": "en-us",
++      "paragraph": 0,
++      "sentence": 0,
++      "clause": 0,
++      "pause_before": { "seconds": 0.0, "events": [] },
++      "pause_after": { "seconds": 0.3, "events": ["boundary-000000"] },
++      "directives": {},
++      "token_indices": [0],
++      "annotation_ids": ["annotation-000000"]
++    },
++    {
++      "text": " world",
++      "spoken_start": 5,
++      "spoken_end": 11,
++      "language": "en-us",
++      "paragraph": 0,
++      "sentence": 0,
++      "clause": 1,
++      "pause_before": { "seconds": 0.0, "events": [] },
++      "pause_after": { "seconds": 0.0, "events": [] },
++      "directives": {},
++      "token_indices": [1],
++      "annotation_ids": ["annotation-000000"]
++    }
++  ]
++}
+diff --git a/tests/migration/goldens/ssmd_language_detection.json b/tests/migration/goldens/ssmd_language_detection.json
+new file mode 100644
+index 0000000..ac708d0
+--- /dev/null
++++ b/tests/migration/goldens/ssmd_language_detection.json
+@@ -0,0 +1,4 @@
++{
++  "texts": { "structural": "Hallo.", "spoken": "Hallo." },
++  "language_detection": { "mode": "auto", "languages": ["de", "en"] }
++}
+diff --git a/tests/migration/goldens/ssmd_marker.json b/tests/migration/goldens/ssmd_marker.json
+new file mode 100644
+index 0000000..82ac5c1
+--- /dev/null
++++ b/tests/migration/goldens/ssmd_marker.json
+@@ -0,0 +1,15 @@
++{
++  "texts": { "structural": "One. Two.", "spoken": "One. Two." },
++  "markers": [
++    { "name": "mark", "spoken_position": 4, "attrs": { "name": "mark" } }
++  ],
++  "units": [
++    {
++      "kind": "paragraph",
++      "spoken_start": 0,
++      "spoken_end": 9,
++      "segment_ids": ["seg-000000", "seg-000001"],
++      "marker_ids": ["marker-000000"]
++    }
++  ]
++}
+diff --git a/tests/migration/goldens/ssmd_pronunciation.json b/tests/migration/goldens/ssmd_pronunciation.json
+new file mode 100644
+index 0000000..0b02fb6
+--- /dev/null
++++ b/tests/migration/goldens/ssmd_pronunciation.json
+@@ -0,0 +1,35 @@
++{
++  "texts": { "structural": "GIF.", "spoken": "GIF." },
++  "segments": [
++    {
++      "text": "GIF",
++      "spoken_start": 0,
++      "spoken_end": 3,
++      "language": "en-us",
++      "paragraph": 0,
++      "sentence": 0,
++      "clause": 0,
++      "pause_before": { "seconds": 0.0, "events": [] },
++      "pause_after": { "seconds": 0.0, "events": [] },
++      "directives": {
++        "pronunciation": { "phonemes": "dʒɪf", "alphabet": "ipa" }
++      },
++      "token_indices": [0],
++      "annotation_ids": ["annotation-000000", "annotation-000001"]
++    },
++    {
++      "text": ".",
++      "spoken_start": 3,
++      "spoken_end": 4,
++      "language": "en-us",
++      "paragraph": 0,
++      "sentence": 0,
++      "clause": 1,
++      "pause_before": { "seconds": 0.0, "events": [] },
++      "pause_after": { "seconds": 0.0, "events": [] },
++      "directives": {},
++      "token_indices": [0],
++      "annotation_ids": ["annotation-000000"]
++    }
++  ]
++}
+diff --git a/tests/migration/test_pykokoro_frontend_parity.py b/tests/migration/test_pykokoro_frontend_parity.py
+new file mode 100644
+index 0000000..08c684f
+--- /dev/null
++++ b/tests/migration/test_pykokoro_frontend_parity.py
+@@ -0,0 +1,110 @@
++from __future__ import annotations
++
++import json
++from pathlib import Path
++from typing import Any
++
++from utterplan import UtterancePlanner
++
++from .cases import CASES
++
++ROOT = Path(__file__).parent
++GOLDENS = ROOT / "goldens"
++
++
++def _semantic_projection(plan: Any) -> dict[str, Any]:
++    data = plan.to_dict()
++    return {
++        "texts": data["texts"],
++        "preparation": {
++            "backend": data["preparation"]["backend"],
++            "languages": data["preparation"]["languages"],
++            "replacements": data["preparation"]["replacements"],
++        },
++        "languages": data["languages"],
++        "annotations": data["annotations"],
++        "boundaries": [
++            {
++                key: boundary[key]
++                for key in ("position", "kind", "seconds", "origin", "strength", "attrs")
++                if key in boundary
++            }
++            for boundary in data["boundaries"]
++        ],
++        "segments": [
++            {
++                key: segment[key]
++                for key in (
++                    "text",
++                    "spoken_start",
++                    "spoken_end",
++                    "language",
++                    "paragraph",
++                    "sentence",
++                    "clause",
++                    "pause_before",
++                    "pause_after",
++                    "directives",
++                    "token_indices",
++                    "annotation_ids",
++                )
++            }
++            for segment in data["segments"]
++        ],
++        "units": [
++            {
++                key: unit[key]
++                for key in ("kind", "spoken_start", "spoken_end", "segment_ids", "marker_ids")
++            }
++            for unit in data["units"]
++        ],
++        "markers": [
++            {key: marker[key] for key in ("name", "spoken_position", "attrs")}
++            for marker in data["markers"]
++        ],
++        "document_metadata": data["document_metadata"],
++        "language_detection": data["document_metadata"].get("language_detection"),
++    }
++
++
++def test_migration_corpus_covers_required_case_groups() -> None:
++    names = {case.name for case in CASES}
++    assert {"plain_single", "plain_empty", "plain_unicode_punctuation"} <= names
++    assert {"spokenform_numbers", "spokenform_date_time", "multilingual_preparation"} <= names
++    assert {"clausal_comma", "parenthetical", "ssmd_break", "ssmd_pause_defaults"} <= names
++    assert {
++        "ssmd_language",
++        "ssmd_pronunciation",
++        "ssmd_voice",
++        "ssmd_header_voice",
++        "ssmd_prosody",
++        "ssmd_emphasis",
++        "ssmd_audio",
++        "ssmd_marker",
++        "ssmd_language_detection",
++    } <= names
++
++
++def test_migration_cases_roundtrip_without_renderer_state() -> None:
++    forbidden = {
++        "model_token_ids",
++        "onnx_model",
++        "session",
++        "audio_samples",
++    }
++    for case in CASES:
++        plan = UtterancePlanner(case.config).plan(case.text)
++        restored = type(plan).from_json(plan.to_json())
++        assert restored == plan
++        serialized = json.dumps(plan.to_dict(), ensure_ascii=False)
++        assert not any(f'"{field}"' in serialized for field in forbidden)
++
++
++def test_migration_goldens_match_semantic_plan_output() -> None:
++    by_name = {case.name: case for case in CASES}
++    for path in sorted(GOLDENS.glob("*.json")):
++        case = by_name[path.stem]
++        expected = json.loads(path.read_text(encoding="utf-8"))
++        actual = _semantic_projection(UtterancePlanner(case.config).plan(case.text))
++        for key, expected_value in expected.items():
++            assert actual[key] == expected_value
+diff --git a/tests/reference/dump_pykokoro_frontend.py b/tests/reference/dump_pykokoro_frontend.py
+index 9602896..11ae352 100644
+--- a/tests/reference/dump_pykokoro_frontend.py
++++ b/tests/reference/dump_pykokoro_frontend.py
+@@ -4,6 +4,7 @@ import importlib.metadata
+ import json
+ import subprocess
+ import sys
++from dataclasses import asdict, is_dataclass
+ from pathlib import Path
+
+ # This helper intentionally imports PyKokoro only in its subprocess.
+@@ -38,6 +39,16 @@ def _versions() -> dict[str, str]:
+     return versions
+
+
++def _plain(value: object) -> object:
++    if is_dataclass(value):
++        return {key: _plain(item) for key, item in asdict(value).items()}
++    if isinstance(value, dict):
++        return {str(key): _plain(item) for key, item in value.items()}
++    if isinstance(value, (tuple, list)):
++        return [_plain(item) for item in value]
++    return value
++
++
+ def _value(item: object, *names: str, default: object = None) -> object:
+     for name in names:
+         if hasattr(item, name):
+@@ -45,7 +56,143 @@ def _value(item: object, *names: str, default: object = None) -> object:
+     return default
+
+
+-def normalize(text: str) -> dict[str, object]:
++def _language_runs(frontend: object) -> list[dict[str, object]]:
++    state = object.__getattribute__(frontend, "_state")
++    runs = getattr(state, "prepared_plan", ())
++    return [
++        {
++            "spoken_start": int(_value(run, "char_start", "start", default=0)),
++            "spoken_end": int(_value(run, "char_end", "end", default=0)),
++            "language": str(_value(run, "language", default="")),
++        }
++        for run in runs
++    ]
++
++
++def _annotations(document: object) -> list[dict[str, object]]:
++    result: list[dict[str, object]] = []
++    for index, item in enumerate(getattr(document, "annotation_spans", ())):
++        result.append(
++            {
++                "id": f"annotation-{index:06d}",
++                "spoken_start": int(_value(item, "char_start", "start", default=0)),
++                "spoken_end": int(_value(item, "char_end", "end", default=0)),
++                "kind": str(_value(item, "kind", default="annotation")),
++                "attrs": dict(_plain(_value(item, "attrs", default={}))),
++            }
++        )
++    return result
++
++
++def _tokens(frontend: object) -> list[dict[str, object]]:
++    state = object.__getattribute__(frontend, "_state")
++    result: list[dict[str, object]] = []
++    for analysis in getattr(state, "prepared_analysis", ()):
++        for token in getattr(analysis, "annotations", ()):
++            result.append(
++                {
++                    "spoken_start": int(_value(token, "start", default=0)),
++                    "spoken_end": int(_value(token, "end", default=0)),
++                    "text": str(_value(token, "text", default="")),
++                    "pos": _value(token, "pos"),
++                    "tag": _value(token, "tag"),
++                    "lemma": _value(token, "lemma"),
++                    "language": _value(token, "language"),
++                }
++            )
++    return result
++
++
++def _segments(document: object) -> list[dict[str, object]]:
++    result: list[dict[str, object]] = []
++    sentence = 0
++    paragraph = 0
++    for item in getattr(document, "segments", ()):
++        text = str(_value(item, "text", default=""))
++        if not text.strip():
++            continue
++        current_paragraph = int(_value(item, "paragraph_idx", default=0) or 0)
++        if result and current_paragraph != paragraph:
++            paragraph = current_paragraph
++            sentence = 0
++        elif (
++            result
++            and result[-1]["text"].rstrip("\"'»”’)]}").endswith((".", "!", "?"))
++            and int(_value(item, "char_start", "start", default=0)) > int(result[-1]["spoken_end"])
++        ):
++            sentence += 1
++        result.append(
++            {
++                "text": text,
++                "spoken_start": int(_value(item, "char_start", "start", default=0)),
++                "spoken_end": int(_value(item, "char_end", "end", default=0)),
++                "language": str(_value(item, "meta", default={}).get("language", "")),
++                "paragraph": paragraph,
++                "sentence": sentence,
++                "clause": int(_value(item, "clause_idx", default=0) or 0),
++            }
++        )
++    return result
++
++
++def _boundaries(document: object) -> list[dict[str, object]]:
++    return [
++        {
++            "position": int(_value(item, "pos", "position", default=0)),
++            "kind": str(_value(item, "kind", default="unknown")),
++            "seconds": _value(item, "duration_s", "seconds"),
++            "attrs": dict(_plain(_value(item, "attrs", default={}))),
++        }
++        for item in getattr(document, "boundary_events", ())
++    ]
++
++
++def _units(
++    segments: list[dict[str, object]], boundaries: list[dict[str, object]], kind: str
++) -> list[dict[str, object]]:
++    groups: list[list[dict[str, object]]] = []
++    keys: list[tuple[object, ...]] = []
++    for segment in segments:
++        key = (
++            (
++                "paragraph",
++                segment["paragraph"],
++            )
++            if kind == "paragraph"
++            else ("sentence", segment["paragraph"], segment["sentence"])
++        )
++        if not groups or keys[-1] != key:
++            keys.append(key)
++            groups.append([])
++        groups[-1].append(segment)
++    result: list[dict[str, object]] = []
++    for index, group in enumerate(groups):
++        start = int(group[0]["spoken_start"])
++        end = int(group[-1]["spoken_end"])
++        marker_positions = {
++            int(boundary["position"])
++            for boundary in boundaries
++            if boundary["kind"] == "marker" and start <= int(boundary["position"]) <= end
++        }
++        result.append(
++            {
++                "index": index,
++                "kind": kind,
++                "spoken_start": start,
++                "spoken_end": end,
++                "segment_indices": list(
++                    range(
++                        sum(len(item) for item in groups[:index]),
++                        sum(len(item) for item in groups[: index + 1]),
++                    )
++                ),
++                "marker_positions": sorted(marker_positions),
++            }
++        )
++    return result
++
++
++def normalize(text: str, *, unit: str = "paragraph") -> dict[str, object]:
+     pipeline = KokoroPipeline(
+         PipelineConfig(
+             generation=GenerationConfig(lang="en-us"),
+@@ -53,58 +200,44 @@ def normalize(text: str) -> dict[str, object]:
+             allow_experimental_frontend=True,
+         )
+     )
+-    frontend = pipeline.prepare_frontend(text)
++    frontend = pipeline.prepare_frontend(text, unit=unit)
+     try:
+         document = frontend._doc
+-        segments = [
+-            {
+-                "text": str(_value(item, "text", default="")),
+-                "spoken_start": int(_value(item, "char_start", "start", default=0)),
+-                "spoken_end": int(_value(item, "char_end", "end", default=0)),
+-                "language": str(_value(item, "meta", default={}).get("language", "en-us")),
+-                "paragraph": int(_value(item, "paragraph_idx", default=0) or 0),
+-                "sentence": int(_value(item, "sentence_idx", default=0) or 0),
+-                "clause": int(_value(item, "clause_idx", default=0) or 0),
+-            }
+-            for item in getattr(document, "segments", ())
+-        ]
+-        annotations = [
+-            {
+-                "structural_start": int(_value(item, "char_start", "start", default=0)),
+-                "structural_end": int(_value(item, "char_end", "end", default=0)),
+-                "kind": str(_value(item, "kind", default="annotation")),
+-                "attrs": dict(_value(item, "attrs", default={})),
+-            }
+-            for item in getattr(document, "annotation_spans", ())
+-        ]
+-        boundaries = [
+-            {
+-                "position": int(_value(item, "pos", "position", default=0)),
+-                "kind": str(_value(item, "kind", default="unknown")),
+-                "seconds": _value(item, "duration_s", "seconds"),
+-                "attrs": dict(_value(item, "attrs", default={})),
+-            }
+-            for item in getattr(document, "boundary_events", ())
+-        ]
++        segments = _segments(document)
++        boundaries = _boundaries(document)
+         preparation = getattr(document, "preparation", None)
+         return {
+             "structural_text": str(
+                 _value(document, "structural_clean_text", "clean_text", default="")
+             ),
+             "spoken_text": str(_value(preparation, "spoken_text", default="")),
+-            "languages": [],
+-            "annotations": annotations,
+-            "tokens": [],
++            "languages": _language_runs(frontend),
++            "annotations": _annotations(document),
++            "tokens": _tokens(frontend),
+             "segments": segments,
+             "boundaries": boundaries,
+-            "markers": [],
++            "markers": [
++                {
++                    "name": str(boundary["attrs"].get("name", boundary["attrs"].get("marker", ""))),
++                    "spoken_position": boundary["position"],
++                    "attrs": boundary["attrs"],
++                }
++                for boundary in boundaries
++                if boundary["kind"] == "marker"
++            ],
++            "units": _units(segments, boundaries, unit),
+             "preparation": {
+-                "replacements": list(_value(preparation, "replacements", default=()) or ()),
+-                "warnings": list(_value(preparation, "warnings", default=()) or ()),
++                "replacements": list(_plain(_value(preparation, "replacements", default=())) or ()),
++                "warnings": list(_plain(_value(preparation, "warnings", default=())) or ()),
++            },
++            "document_metadata": {
++                "header": dict(_plain(getattr(document, "header", {}))),
++                "metadata": dict(_plain(getattr(document, "metadata", {}))),
+             },
+         }
+     finally:
+         frontend.close()
++        pipeline.close()
+
+
+ def main() -> None:
+@@ -118,7 +251,13 @@ def main() -> None:
+         "reference": getattr(pykokoro, "__version__", "unknown"),
+         "commit": _revision(),
+         "dependency_versions": _versions(),
+-        "cases": [{"input": text, "frontend": normalize(str(text))} for text in cases],
++        "cases": [
++            {
++                "input": text,
++                "frontend": normalize(str(text)),
++            }
++            for text in cases
++        ],
+     }
+     print(json.dumps(output, ensure_ascii=False, sort_keys=True))
+
+diff --git a/tests/reference/test_pykokoro_parity.py b/tests/reference/test_pykokoro_parity.py
+index c816965..adaae1a 100644
+--- a/tests/reference/test_pykokoro_parity.py
++++ b/tests/reference/test_pykokoro_parity.py
+@@ -4,6 +4,7 @@ import json
+ import subprocess
+ import sys
+ from pathlib import Path
++from typing import Any
+
+ import pytest
+
+@@ -12,8 +13,166 @@ from utterplan import PlannerConfig, UtterancePlanner
+ from .cases import CASES
+
+
++def _portable_attrs(attrs: dict[str, Any]) -> dict[str, Any]:
++    return {
++        key: value
++        for key, value in attrs.items()
++        if key not in {"voice_name", "voice_reference", "voice_source"}
++    }
++
++
++def _plan_projection(plan: Any) -> dict[str, Any]:
++    return {
++        "spoken_text": plan.texts.spoken,
++        "languages": [
++            {
++                "spoken_start": run.spoken_start,
++                "spoken_end": run.spoken_end,
++                "language": run.language,
++            }
++            for run in plan.languages
++        ],
++        "annotations": [
++            {
++                "spoken_start": annotation.spoken_start,
++                "spoken_end": annotation.spoken_end,
++                "attrs": _portable_attrs(dict(annotation.attrs)),
++            }
++            for annotation in plan.annotations
++        ],
++        "segments": [
++            {
++                "text": segment.text,
++                "spoken_start": segment.spoken_start,
++                "spoken_end": segment.spoken_end,
++                "language": segment.language,
++                "paragraph": segment.paragraph,
++                "sentence": segment.sentence,
++                "clause": segment.clause,
++            }
++            for segment in plan.segments
++        ],
++        "boundaries": [
++            {
++                "position": boundary.position,
++                "kind": boundary.kind,
++                "seconds": boundary.seconds
++                if boundary.seconds is not None
++                else next(
++                    (
++                        segment.pause_after.seconds
++                        if segment.spoken_end == boundary.position
++                        else segment.pause_before.seconds
++                        for segment in plan.segments
++                        if segment.spoken_end == boundary.position
++                        or segment.spoken_start == boundary.position
++                    ),
++                    0.0,
++                ),
++                "attrs": dict(boundary.attrs),
++            }
++            for boundary in plan.boundaries
++        ],
++        "markers": [
++            {
++                "name": marker.name,
++                "spoken_position": marker.spoken_position,
++                "attrs": dict(marker.attrs),
++            }
++            for marker in plan.markers
++        ],
++        "units": [
++            {
++                "kind": unit.kind,
++                "spoken_start": unit.spoken_start,
++                "spoken_end": unit.spoken_end,
++                "segment_indices": [
++                    plan.segments.index(
++                        next(segment for segment in plan.segments if segment.id == segment_id)
++                    )
++                    for segment_id in unit.segment_ids
++                ],
++            }
++            for unit in plan.units
++        ],
++    }
++
++
++def _reference_projection(reference: dict[str, Any]) -> dict[str, Any]:
++    boundaries = []
++    valid_positions = {int(segment["spoken_start"]) for segment in reference["segments"]} | {
++        int(segment["spoken_end"]) for segment in reference["segments"]
++    }
++    for boundary in reference["boundaries"]:
++        if boundary["kind"] == "marker" or boundary["position"] not in valid_positions:
++            continue
++        strength = boundary["attrs"].get("strength")
++        kind = "paragraph" if strength == "p" else "explicit"
++        candidate = {
++            "position": boundary["position"],
++            "kind": kind,
++            "seconds": boundary["seconds"],
++            "attrs": {
++                **boundary["attrs"],
++                "source": "planner_default"
++                if boundary["attrs"].get("source") == "pipeline_default"
++                else boundary["attrs"].get("source"),
++            },
++        }
++        if not any(
++            item["position"] == candidate["position"] and item["kind"] == candidate["kind"]
++            for item in boundaries
++        ):
++            boundaries.append(candidate)
++    languages = [dict(run) for run in reference["languages"]]
++    for run in languages:
++        run["language"] = (
++            str(run["language"]).split("-", 1)[0]
++            if str(run["language"]).startswith("fr-")
++            else run["language"]
++        )
++    segments = [dict(segment) for segment in reference["segments"]]
++    for segment in segments:
++        segment["language"] = (
++            str(segment["language"]).split("-", 1)[0]
++            if str(segment["language"]).startswith("fr-")
++            else segment["language"]
++        )
++    return {
++        "spoken_text": reference["spoken_text"],
++        "languages": languages,
++        "annotations": [
++            {
++                "spoken_start": annotation["spoken_start"],
++                "spoken_end": annotation["spoken_end"],
++                "attrs": _portable_attrs(annotation["attrs"]),
++            }
++            for annotation in reference["annotations"]
++        ],
++        "segments": segments,
++        "boundaries": boundaries,
++        "markers": [
++            {
++                "name": marker["name"],
++                "spoken_position": marker["spoken_position"],
++                "attrs": {"name": marker["name"]},
++            }
++            for marker in reference["markers"]
++        ],
++        "units": [
++            {
++                "kind": unit["kind"],
++                "spoken_start": unit["spoken_start"],
++                "spoken_end": unit["spoken_end"],
++                "segment_indices": unit["segment_indices"],
++            }
++            for unit in reference["units"]
++        ],
++    }
++
++
+ @pytest.mark.reference
+-def test_reference_frontend_normalized_parity() -> None:
++def test_reference_frontend_strict_migration_parity() -> None:
+     sibling = Path(__file__).resolve().parents[3] / "pykokoro"
+     if not sibling.exists():
+         pytest.skip("../pykokoro is not available")
+@@ -32,42 +191,42 @@ def test_reference_frontend_normalized_parity() -> None:
+
+     for case in payload["cases"]:
+         plan = UtterancePlanner(PlannerConfig(language="en-us")).plan(case["input"])
+-        reference = case["frontend"]
+-        assert reference["spoken_text"] == plan.texts.spoken
++        reference = _reference_projection(case["frontend"])
++        actual = _plan_projection(plan)
+
+-        reference_segments = [
+-            segment for segment in reference["segments"] if segment["text"].strip()
+-        ]
+-        native_segments = [
+-            {
+-                "text": segment.text,
+-                "language": segment.language,
+-                "paragraph": segment.paragraph,
+-                "sentence": segment.sentence,
+-                "clause": segment.clause,
+-            }
+-            for segment in plan.segments
+-        ]
++        assert actual["spoken_text"] == reference["spoken_text"]
++        assert actual["languages"] == reference["languages"]
++        assert actual["annotations"] == reference["annotations"]
++        assert actual["segments"] == reference["segments"]
++        assert actual["markers"] == reference["markers"]
++        assert actual["units"] == reference["units"]
+
+-        def normalize(value: str) -> str:
+-            return "".join(value.split())
+-
+-        reference_content = "".join(segment["text"] for segment in reference_segments)
+-        native_content = "".join(segment["text"] for segment in native_segments)
+-        assert normalize(reference_content) == normalize(native_content)
+-
+-        if len(reference_segments) == len(native_segments):
+-
+-            def base_language(value: str) -> str:
+-                return value.split("-", 1)[0]
+-
+-            assert [base_language(segment["language"]) for segment in reference_segments] == [
+-                base_language(segment["language"]) for segment in native_segments
+-            ]
+-            assert [segment["paragraph"] for segment in reference_segments] == [
+-                segment["paragraph"] for segment in native_segments
++        for expected in reference["boundaries"]:
++            matches = [
++                boundary
++                for boundary in actual["boundaries"]
++                if boundary["position"] == expected["position"]
++                and boundary["kind"] == expected["kind"]
+             ]
++            assert matches
++            assert any(
++                boundary["seconds"] == expected["seconds"]
++                and all(
++                    boundary["attrs"].get(key) == value for key, value in expected["attrs"].items()
++                )
++                for boundary in matches
++            )
+
+-        # The reference frontend exposes generic annotation records; compare
+-        # normalized cardinality rather than provider-specific kind names.
+-        assert len(reference["annotations"]) == len(plan.annotations)
++        if case["frontend"]["tokens"]:
++            assert [
++                {
++                    "spoken_start": token.spoken_start,
++                    "spoken_end": token.spoken_end,
++                    "text": token.text,
++                    "pos": token.pos,
++                    "tag": token.tag,
++                    "lemma": token.lemma,
++                    "language": token.language,
++                }
++                for token in plan.tokens
++            ] == case["frontend"]["tokens"]
+diff --git a/tests/test_consumer_contract.py b/tests/test_consumer_contract.py
+index 37e259c..2455275 100644
+--- a/tests/test_consumer_contract.py
++++ b/tests/test_consumer_contract.py
+@@ -7,6 +7,35 @@ import pytest
+ from utterplan import PauseConfig, PlannerConfig, UtterancePlan, UtterancePlanner
+
+
++def _fake_renderer(plan: UtterancePlan) -> None:
++    segment_by_id = {segment.id: segment for segment in plan.segments}
++    annotation_by_id = {annotation.id: annotation for annotation in plan.annotations}
++    marker_by_id = {marker.id: marker for marker in plan.markers}
++    assert plan.texts.spoken == plan.to_dict()["texts"]["spoken"]
++    for run in plan.languages:
++        assert run.language and run.spoken_end >= run.spoken_start
++    for token in plan.tokens:
++        assert plan.texts.spoken[token.spoken_start : token.spoken_end] == token.text
++    for annotation in plan.annotations:
++        assert annotation.id in annotation_by_id
++    for boundary in plan.boundaries:
++        assert boundary.position >= 0
++    for segment in plan.segments:
++        assert segment.id in segment_by_id
++        _ = segment.directives.to_dict()
++        _ = segment.pause_before.seconds + segment.pause_after.seconds
++        for token_index in segment.token_indices:
++            _ = plan.tokens[token_index].text
++        for annotation_id in segment.annotation_ids:
++            _ = annotation_by_id[annotation_id].attrs
++    for marker in plan.markers:
++        assert marker.id in marker_by_id
++    for unit in plan.units:
++        _ = [segment_by_id[segment_id].text for segment_id in unit.segment_ids]
++        _ = [marker_by_id[marker_id].name for marker_id in unit.marker_ids]
++    _ = plan.document_metadata
++
++
+ def assert_public_consumer_contract(plan: UtterancePlan) -> None:
+     segments = {segment.id: segment for segment in plan.segments}
+     annotations = {annotation.id: annotation for annotation in plan.annotations}
+@@ -39,6 +68,17 @@ def assert_public_consumer_contract(plan: UtterancePlan) -> None:
+     ]
+
+
++def test_fake_renderer_cannot_mutate_completed_plan() -> None:
++    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan(
++        '---\nvoice_bindings:\n  narrator: voice-a\n---\nOne. @mark [Two]{voice="narrator"}.'
++    )
++    before = plan.to_json(indent=None)
++    plan_id = plan.plan_id
++    _fake_renderer(plan)
++    assert plan.to_json(indent=None) == before
++    assert plan.plan_id == plan_id
++
++
+ def test_plain_spokenform_consumer_contract() -> None:
+     plan = UtterancePlanner(PlannerConfig(language="en-us")).plan("Dr. Smith has 5 kg.")
+     assert plan.texts.spoken == "Doctor Smith has five kilograms."
+diff --git a/tests/test_consumer_readiness.py b/tests/test_consumer_readiness.py
+index f8cea22..8b3a733 100644
+--- a/tests/test_consumer_readiness.py
++++ b/tests/test_consumer_readiness.py
+@@ -125,3 +125,26 @@ def test_voice_bindings_and_segment_logical_voice_remain_separate() -> None:
+     assert plan.segments[0].directives.voice.reference != "voice-a"
+     assert "offset_map" not in plan.to_dict()["preparation"]
+     assert plan == type(plan).from_json(plan.to_json())
++
++
++def test_language_detection_header_is_preserved_as_portable_metadata() -> None:
++    text = "---\nlanguage_detection:\n  mode: auto\n  languages: [de, en]\n---\nHallo."
++    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan(text)
++    assert plan.document_metadata["language_detection"] == {
++        "mode": "auto",
++        "languages": ["de", "en"],
++    }
++    restored = type(plan).from_json(plan.to_json())
++    assert restored.document_metadata == plan.document_metadata
++
++
++@pytest.mark.parametrize(
++    "header",
++    [
++        "language_detection: true",
++        "language_detection:\n  mode: auto\n  languages: [de, 1]",
++    ],
++)
++def test_language_detection_header_shape_is_validated(header: str) -> None:
++    with pytest.raises(PlanFormatError, match="header.invalid"):
++        UtterancePlanner(PlannerConfig(language="en-us")).plan(f"---\n{header}\n---\nHallo.")
+diff --git a/tests/test_directives.py b/tests/test_directives.py
+index 78f4c30..e00c0d7 100644
+--- a/tests/test_directives.py
++++ b/tests/test_directives.py
+@@ -1,3 +1,5 @@
++import pytest
++
+ from utterplan import PlannerConfig, UtterancePlanner
+
+
+@@ -24,3 +26,72 @@ def test_audio_directive_preserves_supported_engine_neutral_metadata():
+     assert audio.repeat_count == 2
+     assert audio.sound_level == "-3dB"
+     assert plan == type(plan).from_json(plan.to_json())
++
++
++@pytest.mark.parametrize(
++    ("attribute", "value", "field"),
++    [
++        ("src", "clip.wav", "src"),
++        ("audio_src", "clip.wav", "src"),
++        ("alt_text", "alt", "alt_text"),
++        ("audio_alt_text", "alt", "alt_text"),
++        ("clip_begin", "1s", "clip_begin"),
++        ("audio_clip_begin", "1s", "clip_begin"),
++        ("clip_end", "2s", "clip_end"),
++        ("audio_clip_end", "2s", "clip_end"),
++        ("speed", "1.2", "speed"),
++        ("audio_speed", "1.2", "speed"),
++        ("repeat_duration", "3s", "repeat_duration"),
++        ("repeat_dur", "3s", "repeat_duration"),
++        ("audio_repeat_dur", "3s", "repeat_duration"),
++        ("repeat_count", "2", "repeat_count"),
++        ("audio_repeat_count", "2", "repeat_count"),
++        ("sound_level", "-3dB", "sound_level"),
++        ("audio_sound_level", "-3dB", "sound_level"),
++    ],
++)
++def test_audio_directive_aliases(attribute: str, value: str, field: str) -> None:
++    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan(
++        f'[sound]{{src="clip.wav" {attribute}="{value}"}}'
++    )
++    audio = plan.segments[0].directives.audio
++    assert audio is not None
++    assert getattr(audio, field) == (int(value) if field == "repeat_count" else value)
++
++
++@pytest.mark.parametrize(
++    ("attribute", "expected"),
++    [("rate", "1.2"), ("prosody_rate", "1.2")],
++)
++def test_prosody_rate_aliases(attribute: str, expected: str) -> None:
++    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan(
++        f'[fast]{{{attribute}="{expected}"}}'
++    )
++    assert plan.segments[0].directives.prosody.rate == expected
++
++
++@pytest.mark.parametrize(
++    ("attribute", "field", "value"),
++    [
++        ("pitch", "pitch", "+2st"),
++        ("prosody_pitch", "pitch", "+2st"),
++        ("volume", "volume", "80%"),
++        ("prosody_volume", "volume", "80%"),
++    ],
++)
++def test_prosody_aliases(attribute: str, field: str, value: str) -> None:
++    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan(
++        f'[fast]{{{attribute}="{value}"}}'
++    )
++    assert getattr(plan.segments[0].directives.prosody, field) == value
++
++
++@pytest.mark.parametrize("attribute", ["ph", "phonemes"])
++def test_pronunciation_aliases(attribute: str) -> None:
++    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan(
++        f'[word]{{{attribute}="dʒɪf" alphabet="ipa"}}'
++    )
++    pronunciation = plan.segments[0].directives.pronunciation
++    assert pronunciation is not None
++    assert pronunciation.phonemes == "dʒɪf"
++    assert pronunciation.alphabet == "ipa"
+diff --git a/tests/test_explain.py b/tests/test_explain.py
+index ec0c6a3..109e2b0 100644
+--- a/tests/test_explain.py
++++ b/tests/test_explain.py
+@@ -28,7 +28,7 @@ def test_basic_explanation_is_human_oriented_and_exact() -> None:
+         "  No written-to-spoken changes.\n\n"
+         "Speech plan\n"
+         "  Unit 1: paragraph\n"
+-        "    1. [en-us] \"Hello.\"\n\n"
++        '    1. [en-us] "Hello."\n\n'
+         "No warnings.\n"
+     )
+     assert "sha256:" not in output
+@@ -79,8 +79,8 @@ def test_multilingual_segments_are_in_render_order() -> None:
+
+     labels = [output.index(label) for label in ("[en-us]", "[fr]", "[en-us]")]
+     assert labels[0] < labels[1]
+-    assert "[fr] \"Bonjour\"" in output
+-    assert "[en-us] \".\"" in output
++    assert '[fr] "Bonjour"' in output
++    assert '[en-us] "."' in output
+
+
+ def test_markers_are_shown_in_their_owning_unit() -> None:
+diff --git a/tests/test_pauses.py b/tests/test_pauses.py
+index 686ad8b..95e11d8 100644
+--- a/tests/test_pauses.py
++++ b/tests/test_pauses.py
+@@ -1,6 +1,8 @@
+ import pytest
+
+ from utterplan import PauseConfig, PlannerConfig, UtterancePlanner
++from utterplan.model import BoundaryEvent, PlanSegment
++from utterplan.pauses import resolve_pauses
+
+ TEXT = "The backup battery (still warm from the morning test) sat beside the console."
+
+@@ -125,3 +127,60 @@ def test_explicit_ssmd_break_remains_active_when_automatic_pauses_are_disabled()
+
+ def test_default_pause_mode_remains_tts():
+     assert PauseConfig().mode == "tts"
++
++
++def test_high_confidence_clausal_comma_and_zero_duration_boundary_are_resolved() -> None:
++    segment = PlanSegment("seg", "Hello", 0, 5, "en-us")
++    boundaries = (
++        BoundaryEvent(
++            "comma",
++            5,
++            "clausal_comma",
++            origin="phrasplit",
++            attrs={"automatic": True, "confidence": "1.0"},
++        ),
++        BoundaryEvent(
++            "zero",
++            5,
++            "explicit",
++            seconds=0.0,
++            origin="ssmd",
++            attrs={"anchor": "after"},
++        ),
++    )
++    resolved = resolve_pauses([segment], list(boundaries), PauseConfig(mode="auto"))[0]
++    assert resolved.pause_after.seconds == pytest.approx(0.3)
++    assert resolved.pause_after.events == ("comma", "zero")
++
++
++def test_overlapping_boundary_sources_keep_provenance_and_choose_longest_pause() -> None:
++    segment = PlanSegment("seg", "Hello", 0, 5, "en-us")
++    boundaries = (
++        BoundaryEvent(
++            "sentence",
++            5,
++            "sentence",
++            seconds=0.6,
++            origin="planner",
++            attrs={"automatic": True},
++        ),
++        BoundaryEvent(
++            "break",
++            5,
++            "explicit",
++            seconds=0.2,
++            origin="ssmd",
++            attrs={"anchor": "after"},
++        ),
++    )
++    resolved = resolve_pauses([segment], list(boundaries), PauseConfig(mode="auto"))[0]
++    assert resolved.pause_after.seconds == pytest.approx(0.6)
++    assert resolved.pause_after.events == ("break", "sentence")
++
++
++def test_unit_content_hash_tracks_semantic_content() -> None:
++    first = UtterancePlanner(PlannerConfig(language="en-us")).plan("One.")
++    second = UtterancePlanner(PlannerConfig(language="en-us")).plan("Two.")
++    assert first.units[0].content_hash != second.units[0].content_hash
++    first.validate()
++    second.validate()
+diff --git a/utterplan/cli.py b/utterplan/cli.py
+index 393205d..17d85e0 100644
+--- a/utterplan/cli.py
++++ b/utterplan/cli.py
+@@ -84,7 +84,6 @@ def build_parser() -> argparse.ArgumentParser:
+     validate_parser = commands.add_parser("validate", help="validate a saved TTS plan")
+     validate_parser.add_argument("input", type=Path)
+
+-
+     explain_parser = commands.add_parser(
+         "explain", help="explain a saved TTS plan in human-readable form"
+     )
+diff --git a/utterplan/directives.py b/utterplan/directives.py
+index d4c54e1..aeb5c0c 100644
+--- a/utterplan/directives.py
++++ b/utterplan/directives.py
+@@ -36,30 +36,43 @@ def resolve_directives(
+     voice = pronunciation = prosody = emphasis = audio = None
+     for annotation in selected:
+         attrs = annotation.attrs
+-        if attrs.get("voice") or attrs.get("voice_name"):
+-            voice = VoiceDirective(str(attrs.get("voice") or attrs.get("voice_name")))
+-        phonemes = attrs.get("phonemes") or attrs.get("ph")
++        voice_reference = _first(attrs, "voice", "voice_name")
++        if voice_reference:
++            voice = VoiceDirective(voice_reference)
++        phonemes = _first(attrs, "ph", "phonemes")
+         if phonemes:
+-            pronunciation = PronunciationDirective(str(phonemes), str(attrs.get("alphabet", "ipa")))
+-        if any(key in attrs for key in ("rate", "pitch", "volume", "speed")):
++            pronunciation = PronunciationDirective(phonemes, _first(attrs, "alphabet") or "ipa")
++        if any(
++            key in attrs
++            for key in (
++                "rate",
++                "prosody_rate",
++                "pitch",
++                "prosody_pitch",
++                "volume",
++                "prosody_volume",
++                "speed",
++            )
++        ):
+             prosody = ProsodyDirective(
+-                _first(attrs, "rate", "speed"),
+-                _first(attrs, "pitch"),
+-                _first(attrs, "volume", "loudness"),
++                _first(attrs, "rate", "prosody_rate", "speed"),
++                _first(attrs, "pitch", "prosody_pitch"),
++                _first(attrs, "volume", "prosody_volume", "loudness"),
+             )
+-        if attrs.get("emphasis") or attrs.get("level"):
+-            emphasis = EmphasisDirective(str(attrs.get("emphasis") or attrs.get("level")))
+-        src = attrs.get("audio_src") or attrs.get("src")
++        emphasis_level = _first(attrs, "emphasis", "level")
++        if emphasis_level:
++            emphasis = EmphasisDirective(emphasis_level)
++        src = _first(attrs, "src", "audio_src")
+         if src:
+             audio = AudioDirective(
+-                str(src),
++                src,
+                 _first(attrs, "alt_text", "audio_alt_text"),
+-                _first(attrs, "clip_begin"),
+-                _first(attrs, "clip_end"),
+-                _first(attrs, "speed"),
+-                _first(attrs, "repeat_duration"),
+-                _int(attrs, "repeat_count"),
+-                _first(attrs, "sound_level"),
++                _first(attrs, "clip_begin", "audio_clip_begin"),
++                _first(attrs, "clip_end", "audio_clip_end"),
++                _first(attrs, "speed", "audio_speed"),
++                _first(attrs, "repeat_duration", "repeat_dur", "audio_repeat_dur"),
++                _int(attrs, "repeat_count", "audio_repeat_count"),
++                _first(attrs, "sound_level", "audio_sound_level"),
+             )
+     return PlanSegment(
+         **{
+@@ -77,6 +90,6 @@ def _first(attrs: Mapping[str, Any], *names: str) -> str | None:
+     return None
+
+
+-def _int(attrs: Mapping[str, Any], name: str) -> int | None:
+-    value = attrs.get(name)
++def _int(attrs: Mapping[str, Any], *names: str) -> int | None:
++    value = _first(attrs, *names)
+     return int(value) if value is not None else None
+diff --git a/utterplan/explain.py b/utterplan/explain.py
+index 7cd72cf..8b9c6e1 100644
+--- a/utterplan/explain.py
++++ b/utterplan/explain.py
+@@ -73,12 +73,10 @@ def _format_plan_summary(plan: UtterancePlan, lines: list[str], *, details: bool
+             "Plan",
+             f"  input: {plan.source.format}",
+             f"  default language: {config.get('language', '')}",
+-            f"  preparation: {plan.preparation.backend}, "
+-            f"{_replacement_count(plan)}",
++            f"  preparation: {plan.preparation.backend}, {_replacement_count(plan)}",
+             f"  pause mode: {pause_mode}",
+             f"  grouping: {config.get('unit', '')}",
+-            f"  result: {_count(len(plan.units), 'unit')}, "
+-            f"{_count(len(plan.segments), 'segment')}",
++            f"  result: {_count(len(plan.units), 'unit')}, {_count(len(plan.segments), 'segment')}",
+             "",
+         ]
+     )
+diff --git a/utterplan/model.py b/utterplan/model.py
+index 842eaa5..49c53ee 100644
+--- a/utterplan/model.py
++++ b/utterplan/model.py
+@@ -879,6 +879,13 @@ def validate_plan(plan: UtterancePlan) -> None:
+             raise PlanValidationError(
+                 "marker position is outside spoken text", code="marker.out_of_range"
+             )
++    previous_unit_end = 0
++    for expected_index, unit in enumerate(plan.units):
++        if unit.index != expected_index:
++            raise PlanValidationError("units must have contiguous indexes", code="unit.index")
++        if unit.spoken_start < previous_unit_end:
++            raise PlanValidationError("units must not overlap", code="unit.overlap")
++        previous_unit_end = unit.spoken_end
+     for unit in plan.units:
+         if not all(segment_id in segment_ids for segment_id in unit.segment_ids):
+             raise PlanValidationError(
+@@ -913,6 +920,10 @@ def validate_plan(plan: UtterancePlan) -> None:
+         raise PlanValidationError(
+             "marker belongs to more than one unit", code="marker.unit_membership"
+         )
++    if set(assigned_markers) != marker_ids:
++        raise PlanValidationError(
++            "every marker must belong to exactly one unit", code="marker.unit_membership"
++        )
+     if plan.plan_id != semantic_hash(plan.semantic_dict()):
+         raise PlanValidationError(
+             "plan_id does not match semantic contents", code="plan_id.mismatch"
+diff --git a/utterplan/parsers.py b/utterplan/parsers.py
+index df1f378..5cd0301 100644
+--- a/utterplan/parsers.py
++++ b/utterplan/parsers.py
+@@ -98,6 +98,11 @@ class SSMDDocumentParser:
+                     )
+                 )
+             elif kind == "paragraph":
++                paragraph_origin = _duration_origin(
++                    {**attrs, "strength": "x-strong"}, config, parsed.header
++                )
++                if paragraph_origin == "none":
++                    paragraph_origin = "planner_default"
+                 boundaries.append(
+                     BoundaryEvent(
+                         id=f"boundary-{len(boundaries):06d}",
+@@ -109,11 +114,18 @@ class SSMDDocumentParser:
+                         attrs={
+                             **attrs,
+                             "anchor": event_anchor,
+-                            "pause_origin": _duration_origin(attrs, config, parsed.header),
++                            "strength": "p",
++                            "source": paragraph_origin,
++                            "pause_origin": paragraph_origin,
+                         },
+                     )
+                 )
+         metadata = {"header": dict(parsed.header)}
++        language_detection = _normalize_language_detection(
++            parsed.header.get("language_detection"), config, warnings
++        )
++        if language_detection is not None:
++            metadata["language_detection"] = language_detection
+         if parsed.header.get("voice_bindings") is not None:
+             metadata["voice_bindings"] = parsed.header["voice_bindings"]
+         return ParsedDocument(
+@@ -141,7 +153,7 @@ class SSMDDocumentParser:
+             return
+
+         header = front_matter.data
+-        known = {"pause_defaults", "voice_bindings"}
++        known = {"pause_defaults", "voice_bindings", "language_detection"}
+         unknown = sorted(set(header) - known)
+         if unknown:
+             message = f"unknown SSMD header key(s): {', '.join(unknown)}"
+@@ -150,6 +162,8 @@ class SSMDDocumentParser:
+             if config.ssmd.unknown_header == "warn":
+                 warnings.append(message)
+
++        _normalize_language_detection(header.get("language_detection"), config, warnings)
++
+         pause_defaults = header.get("pause_defaults")
+         if pause_defaults is None:
+             return
+@@ -179,6 +193,29 @@ class SSMDDocumentParser:
+                 _header_invalid(config, warnings, str(exc))
+
+
++def _normalize_language_detection(
++    value: Any, config: PlannerConfig, warnings: list[str]
++) -> dict[str, Any] | None:
++    if value is None:
++        return None
++    if not isinstance(value, dict):
++        _header_invalid(config, warnings, "language_detection must be a mapping")
++        return None
++    mode = value.get("mode")
++    languages = value.get("languages")
++    if not isinstance(mode, str) or not mode:
++        _header_invalid(config, warnings, "language_detection.mode must be a non-empty string")
++        return None
++    if not isinstance(languages, (list, tuple)) or not all(
++        isinstance(language, str) and language for language in languages
++    ):
++        _header_invalid(
++            config, warnings, "language_detection.languages must be a list of non-empty strings"
++        )
++        return None
++    return {"mode": mode, "languages": list(languages)}
++
++
+ def _header_invalid(config: PlannerConfig, warnings: list[str], message: str) -> None:
+     if config.ssmd.strict_header:
+         raise PlanFormatError(message, code="header.invalid")
+diff --git a/utterplan/planner.py b/utterplan/planner.py
+index 93e4914..d18390b 100644
+--- a/utterplan/planner.py
++++ b/utterplan/planner.py
+@@ -1,5 +1,6 @@
+ from __future__ import annotations
+
++import re
+ from dataclasses import asdict, replace
+ from typing import Any
+
+@@ -221,6 +222,22 @@ def _segment(
+                 if point is not None and start < point < end and _semantic_annotation(annotation)
+             )
+             ordered = sorted(cuts)
++            clause_breaks = {
++                boundary.position
++                for boundary in boundaries
++                if start < boundary.position < end and boundary_is_active(boundary, pause_config)
++            }
++            clause_breaks.update(
++                annotation.spoken_end
++                for annotation in annotations
++                if (
++                    annotation.spoken_end is not None
++                    and start < annotation.spoken_end < end
++                    and _semantic_annotation(annotation)
++                    and not _language_annotation(annotation)
++                )
++            )
++            current_clause = clause
+             for part_start, part_end in zip(ordered, ordered[1:], strict=False):
+                 if part_end <= part_start or not text[part_start:part_end].strip():
+                     continue
+@@ -233,11 +250,13 @@ def _segment(
+                         language=run.language,
+                         paragraph=paragraph,
+                         sentence=sentence,
+-                        clause=clause,
++                        clause=current_clause,
+                         structural_start=None,
+                         structural_end=None,
+                     )
+                 )
++                if part_end in clause_breaks:
++                    current_clause += 1
+     return result
+
+
+@@ -272,7 +291,42 @@ def _split_run(
+         for left, right in zip(valid, valid[1:], strict=False)
+     ):
+         return [_FallbackSplit(0, len(text), 0, 0, text)]
+-    return _repair_quote_boundaries(valid, text)
++    return _repair_quote_boundaries(_split_closing_quote_boundaries(valid, text), text)
++
++
++def _split_closing_quote_boundaries(items: list[Any], text: str) -> list[Any]:
++    pattern = re.compile(r'[.!?]["\'»”’]+\s+(?=[A-ZÄÖÜÀ-Þ])')
++    repaired: list[Any] = []
++    for item in items:
++        start = int(item.char_start)
++        sentence = int(getattr(item, "sentence_idx", 0) or 0)
++        paragraph = int(getattr(item, "paragraph_idx", 0) or 0)
++        for match in pattern.finditer(text[start : int(item.char_end)]):
++            end = start + match.start() + len(match.group(0).rstrip())
++            if end <= start or end >= int(item.char_end):
++                continue
++            repaired.append(
++                _FallbackSplit(
++                    start,
++                    end,
++                    paragraph,
++                    sentence,
++                    text[start:end],
++                )
++            )
++            sentence += 1
++            start += match.end()
++        if start < int(item.char_end):
++            repaired.append(
++                _FallbackSplit(
++                    start,
++                    int(item.char_end),
++                    paragraph,
++                    sentence,
++                    text[start : int(item.char_end)],
++                )
++            )
++    return repaired
+
+
+ def _repair_quote_boundaries(items: list[Any], text: str) -> list[Any]:
+@@ -446,6 +500,12 @@ def _attach_membership(
+     return output
+
+
++def _language_annotation(annotation: AnnotationSpan) -> bool:
++    return set(annotation.attrs).issubset({"lang", "language", "tag"}) and (
++        "lang" in annotation.attrs or "language" in annotation.attrs
++    )
++
++
+ def _semantic_annotation(annotation: AnnotationSpan) -> bool:
+     return any(
+         key in annotation.attrs
+diff --git a/utterplan/utterplan.schema.json b/utterplan/utterplan.schema.json
+index 0bc2385..60f2b3a 100644
+--- a/utterplan/utterplan.schema.json
++++ b/utterplan/utterplan.schema.json
+@@ -57,7 +57,13 @@
+     "segments": { "type": "array", "items": { "$ref": "#/$defs/segment" } },
+     "units": { "type": "array", "items": { "$ref": "#/$defs/unit" } },
+     "markers": { "type": "array", "items": { "$ref": "#/$defs/marker" } },
+-    "document_metadata": { "type": "object" },
++    "document_metadata": {
++      "type": "object",
++      "properties": {
++        "language_detection": { "$ref": "#/$defs/language_detection" }
++      },
++      "additionalProperties": true
++    },
+     "warnings": { "type": "array", "items": { "type": "string" } },
+     "diagnostics": {
+       "type": "array",
+@@ -88,6 +94,18 @@
+       "additionalProperties": false
+     },
+     "range": { "type": "integer", "minimum": 0 },
++    "language_detection": {
++      "type": "object",
++      "required": ["mode", "languages"],
++      "properties": {
++        "mode": { "type": "string", "minLength": 1 },
++        "languages": {
++          "type": "array",
++          "items": { "type": "string", "minLength": 1 }
++        }
++      },
++      "additionalProperties": false
++    },
+     "language": {
+       "type": "object",
+       "required": ["id", "spoken_start", "spoken_end", "language", "source"],

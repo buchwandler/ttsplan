@@ -49,12 +49,16 @@ def inspect_envelope(data: Any) -> PlanEnvelope:
         raise PlanFormatError("format must be 'utterplan'", code="format.invalid", path="$.format")
     if "schema_version" not in data:
         raise PlanMigrationError(
-            "schema_version is required to route the plan", code="migration.source-version-missing", path="$.schema_version"
+            "schema_version is required to route the plan",
+            code="migration.source-version-missing",
+            path="$.schema_version",
         )
     version = data["schema_version"]
     if type(version) is not int:
         raise PlanMigrationError(
-            "schema_version must be an integer", code="migration.source-version-invalid", path="$.schema_version"
+            "schema_version must be an integer",
+            code="migration.source-version-invalid",
+            path="$.schema_version",
         )
     plan_id = data.get("plan_id")
     return PlanEnvelope(version, plan_id if isinstance(plan_id, str) else None)
@@ -115,7 +119,9 @@ def _apply_migration_chain(
             )
         steps.append(MigrationStep(source_version, expected))
         if len(steps) > target_version - source:
-            raise PlanMigrationError("migration chain did not advance", code="migration.step-invalid")
+            raise PlanMigrationError(
+                "migration chain did not advance", code="migration.step-invalid"
+            )
     return working, tuple(steps)
 
 
@@ -161,7 +167,9 @@ def migrate_plan_data(
     envelope = inspect_envelope(original)
     target = CURRENT_SCHEMA_VERSION if target_version is None else target_version
     if type(target) is not int:
-        raise PlanMigrationError("target schema version must be an integer", code="migration.target-invalid")
+        raise PlanMigrationError(
+            "target schema version must be an integer", code="migration.target-invalid"
+        )
     if envelope.schema_version > CURRENT_SCHEMA_VERSION:
         raise UnsupportedSchemaError(envelope.schema_version)
     if target > CURRENT_SCHEMA_VERSION:
@@ -207,7 +215,10 @@ def migrate_plan_json(
     except json.JSONDecodeError as exc:
         raise PlanFormatError(str(exc), code="json.invalid") from exc
     result = migrate_plan_data(data, target_version=target_version)
-    return json.dumps(result.data, ensure_ascii=False, sort_keys=True, indent=indent, allow_nan=False) + "\n"
+    return (
+        json.dumps(result.data, ensure_ascii=False, sort_keys=True, indent=indent, allow_nan=False)
+        + "\n"
+    )
 
 
 __all__ = [

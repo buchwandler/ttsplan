@@ -47,7 +47,7 @@ def test_migration_does_not_mutate_input() -> None:
 
 
 def test_migrate_json_roundtrips_current_plan() -> None:
-    result = migrate_plan_json("{\"format\": \"utterplan\", \"schema_version\": 1}")
+    result = migrate_plan_json('{"format": "utterplan", "schema_version": 1}')
     assert '"schema_version": 1' in result
     assert '"format": "utterplan"' in result
 

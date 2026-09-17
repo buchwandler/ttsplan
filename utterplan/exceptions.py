@@ -30,6 +30,7 @@ class PlanMigrationError(UtterPlanError):
 class MigrationPathError(PlanMigrationError):
     """No supported sequential migration path exists."""
 
+
 class UnsupportedSchemaError(PlanFormatError):
     def __init__(self, version: object) -> None:
         from .versioning import CURRENT_SCHEMA_VERSION
@@ -40,6 +41,7 @@ class UnsupportedSchemaError(PlanFormatError):
             code="schema.unsupported_version",
             path="$.schema_version",
         )
+
 
 class PlanValidationError(PlanFormatError):
     """The plan has valid JSON shape but invalid planning semantics."""

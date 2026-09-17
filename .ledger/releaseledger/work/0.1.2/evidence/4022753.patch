@@ -1,0 +1,677 @@
+ README.md             |   2 +
+ docs/cli.md           |  12 ++
+ docs/debugging.md     |   4 +-
+ repairledger.toml     |   9 --
+ tests/test_cli.py     |  38 ++++++
+ tests/test_explain.py | 122 +++++++++++++++++
+ utterplan/cli.py      |  15 ++
+ utterplan/explain.py  | 368 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 8 files changed, 560 insertions(+), 10 deletions(-)
+
+diff --git a/README.md b/README.md
+index 82431fb..13f0a0e 100644
+--- a/README.md
++++ b/README.md
+@@ -36,8 +36,10 @@ The CLI also provides:
+ utterplan --version
+ utterplan validate chapter.utterplan.json
+ utterplan inspect chapter.utterplan.json --segment 0
++utterplan explain chapter.utterplan.json
+ ```
+
++`explain` presents the compiled plan as a human-readable speech plan, while `inspect` exposes lower-level diagnostic fields.
+ Compile JSON is written to stdout when no output file is supplied. Status
+ messages use stderr, and existing output files require `--force`.
+
+diff --git a/docs/cli.md b/docs/cli.md
+index 709bebe..03aeea1 100644
+--- a/docs/cli.md
++++ b/docs/cli.md
+@@ -51,6 +51,18 @@ utterplan compile chapter.ssmd --lang en-us -o chapter.utterplan.json --json | j
+ Argparse usage errors use exit code 2. Input, planning, file, and plan
+ validation errors use exit code 1 and are reported without a traceback.
+
++## Explain a plan
++
++Explain an existing compiled plan as a human-readable speech narrative:
++
++```bash
++utterplan explain chapter.utterplan.json
++utterplan explain chapter.utterplan.json --details
++```
++
++The default output shows the prepared wording, render units, ordered segments, languages, resolved pauses, directives, markers, and warnings. Add `--details` for IDs, offsets, provenance, hashes, and plan identity information. Use `inspect` instead when you need raw fields such as tokens, boundaries, or a specific segment.
++
++
+ ## Planning controls
+
+ - `--unit paragraph|sentence` chooses render-unit grouping.
+diff --git a/docs/debugging.md b/docs/debugging.md
+index a4829d7..68ff3f0 100644
+--- a/docs/debugging.md
++++ b/docs/debugging.md
+@@ -1,11 +1,13 @@
+ # Debugging
+
+-Inspect the plan before inspecting audio:
++Start with the integrated plan explanation before inspecting audio:
+
+ ```text
+ source / SSMD -> document.utterplan.json -> renderer diagnostics -> audio
+ ```
+
++`utterplan explain FILE` shows prepared wording, render units, languages, resolved pauses, directives, markers, and warnings together. Use `utterplan inspect` when you need raw tokens, boundaries, coordinates, or a specific segment.
++
+ If spoken wording is wrong, inspect `texts.spoken` and `preparation`. If language is wrong, inspect `languages` and annotation provenance. If a pause is missing, inspect `boundaries` and segment pause event IDs. If the plan is correct but G2P or audio is wrong, the issue belongs to the renderer or acoustic runtime, not the planning boundary.
+
+ `utterplan inspect FILE --boundaries --tokens` is intentionally human-readable and does not require a renderer.
+diff --git a/repairledger.toml b/repairledger.toml
+deleted file mode 100644
+index 1ea8544..0000000
+--- a/repairledger.toml
++++ /dev/null
+@@ -1,9 +0,0 @@
+-[ledger]
+-code = "rl"
+-name = "repairledger"
+-
+-[project]
+-name = "utterplan"
+-
+-[storage]
+-repairledger_dir = ".repairledger"
+diff --git a/tests/test_cli.py b/tests/test_cli.py
+index 5e0f57b..b1e36cb 100644
+--- a/tests/test_cli.py
++++ b/tests/test_cli.py
+@@ -211,3 +211,41 @@ def test_compile_file_and_positional_text_are_mutually_exclusive(
+     source.write_text("Hello.", encoding="utf-8")
+     assert main(["compile", "extra", "--file", str(source), "--lang", "en-us"]) == 1
+     assert "cannot be combined" in capsys.readouterr().err
++
++
++def test_explain_plan(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
++    output = tmp_path / "plan.utterplan.json"
++    assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(output)]) == 0
++    capsys.readouterr()
++
++    assert main(["explain", str(output)]) == 0
++    captured = capsys.readouterr()
++    assert "UtterPlan explanation" in captured.out
++    assert "Speech plan" in captured.out
++    assert '[en-us] "Hello."' in captured.out
++    assert captured.err == ""
++
++
++def test_explain_details(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
++    output = tmp_path / "plan.utterplan.json"
++    assert main(["compile", "Hello.", "--lang", "en-us", "-o", str(output)]) == 0
++    capsys.readouterr()
++
++    assert main(["explain", str(output), "--details"]) == 0
++    captured = capsys.readouterr()
++    assert "plan id: sha256:" in captured.out
++    assert "spoken: 0:6" in captured.out
++    assert captured.err == ""
++
++
++def test_explain_invalid_plan_returns_one_without_traceback(
++    tmp_path: Path, capsys: pytest.CaptureFixture[str]
++) -> None:
++    invalid = tmp_path / "invalid.json"
++    invalid.write_text("{}", encoding="utf-8")
++
++    assert main(["explain", str(invalid)]) == 1
++    captured = capsys.readouterr()
++    assert captured.out == ""
++    assert "format.invalid" in captured.err
++    assert "Traceback" not in captured.err
+diff --git a/tests/test_explain.py b/tests/test_explain.py
+new file mode 100644
+index 0000000..ec0c6a3
+--- /dev/null
++++ b/tests/test_explain.py
+@@ -0,0 +1,122 @@
++from __future__ import annotations
++
++from pathlib import Path
++
++from utterplan import UtterancePlan
++from utterplan.explain import format_explanation
++
++GOLDEN = Path("tests/golden")
++
++
++def _load(name: str) -> UtterancePlan:
++    return UtterancePlan.load(GOLDEN / name)
++
++
++def test_basic_explanation_is_human_oriented_and_exact() -> None:
++    output = format_explanation(_load("basic_en.utterplan.json"))
++
++    assert output == (
++        "UtterPlan explanation\n\n"
++        "Plan\n"
++        "  input: plain\n"
++        "  default language: en-us\n"
++        "  preparation: spokenform, no replacements\n"
++        "  pause mode: tts\n"
++        "  grouping: paragraph\n"
++        "  result: 1 unit, 1 segment\n\n"
++        "Text preparation\n"
++        "  No written-to-spoken changes.\n\n"
++        "Speech plan\n"
++        "  Unit 1: paragraph\n"
++        "    1. [en-us] \"Hello.\"\n\n"
++        "No warnings.\n"
++    )
++    assert "sha256:" not in output
++    assert "token-0" not in output
++    assert "spoken 0:6" not in output
++
++
++def test_preparation_replacements_are_explained_without_ranges_by_default() -> None:
++    plan = _load("spokenform_offsets.utterplan.json")
++    output = format_explanation(plan)
++
++    assert '"Dr." -> "Doctor"  (abbreviation: abbr:Dr.)' in output
++    assert '"5 kg" -> "five kilograms"  (structured: en.quantity)' in output
++    assert '"Jan. 4" -> "January fourth"  (structured: en.date.mdy_text)' in output
++    assert "structural 0:3" not in output
++
++    details = format_explanation(plan, details=True)
++    assert "structural 0:3 -> spoken 0:6" in details
++    assert "structural 17:21 -> spoken 20:34" in details
++
++
++def test_parenthetical_pauses_use_resolved_pause_and_boundary_provenance() -> None:
++    output = format_explanation(_load("parenthetical.utterplan.json"))
++
++    assert output.count("pause 0.15 s") == 2
++    assert "before: pause 0.15 s: parenthetical opening, detected by phrasplit" in output
++    assert "before: pause 0.15 s: parenthetical closing, detected by phrasplit" in output
++    assert "split because" not in output
++
++
++def test_explicit_pause_uses_resolved_segment_duration() -> None:
++    output = format_explanation(_load("ssmd_breaks.utterplan.json"))
++
++    assert "after: pause 0.50 s: explicit boundary, from SSMD" in output
++    assert "after: pause 0.15 s: explicit boundary, from SSMD" in output
++
++
++def test_directives_are_humanized() -> None:
++    output = format_explanation(_load("directives.utterplan.json"))
++
++    assert "prosody: rate 1.2, pitch +2st, volume 80%" in output
++    assert "emphasis: strong" in output
++    assert "{'prosody'" not in output
++
++
++def test_multilingual_segments_are_in_render_order() -> None:
++    output = format_explanation(_load("multilingual.utterplan.json"))
++
++    labels = [output.index(label) for label in ("[en-us]", "[fr]", "[en-us]")]
++    assert labels[0] < labels[1]
++    assert "[fr] \"Bonjour\"" in output
++    assert "[en-us] \".\"" in output
++
++
++def test_markers_are_shown_in_their_owning_unit() -> None:
++    output = format_explanation(_load("markers.utterplan.json"))
++
++    assert "Unit 2: sentence" in output
++    assert "markers: @mark" in output
++    assert output.index("Unit 2: sentence") < output.index("markers: @mark")
++
++
++def test_details_include_technical_identity_and_correlated_ids() -> None:
++    output = format_explanation(_load("parenthetical.utterplan.json"), details=True)
++
++    assert "plan id: sha256:" in output
++    assert "schema: 1" in output
++    assert "id: seg-000001" in output
++    assert "spoken: 19:53" in output
++    assert "content hash: sha256:" in output
++    assert "events: boundary-000000" in output
++    assert "origin phrasplit" in output
++    assert "planning.complete [info]" in output
++
++
++def test_explanation_is_deterministic() -> None:
++    plan = _load("directives.utterplan.json")
++
++    assert format_explanation(plan) == format_explanation(plan)
++    assert format_explanation(plan, details=True) == format_explanation(plan, details=True)
++
++
++def test_empty_collections_are_concise() -> None:
++    output = format_explanation(_load("basic_en.utterplan.json"))
++
++    assert "No written-to-spoken changes." in output
++    assert "No warnings." in output
++    assert "Warnings\n" not in output
++    assert "Language runs" not in output
++    assert "markers:" not in output
++    assert "Boundaries" not in output
+diff --git a/utterplan/cli.py b/utterplan/cli.py
+index 308a1f6..393205d 100644
+--- a/utterplan/cli.py
++++ b/utterplan/cli.py
+@@ -8,6 +8,7 @@ from typing import Literal, cast
+ from . import PlannerConfig, UtterancePlan, UtterancePlanner, __version__
+ from .config import LinguisticsConfig, PauseConfig
+ from .exceptions import UtterPlanError
++from .explain import format_explanation
+
+ InputFormat = Literal["plain", "ssmd"]
+
+@@ -18,6 +19,7 @@ _EXAMPLES = """examples:
+   utterplan compile chapter.ssmd --lang en-us -o chapter.utterplan.json
+   utterplan validate chapter.utterplan.json
+   utterplan inspect chapter.utterplan.json --segment 0
++  utterplan explain chapter.utterplan.json
+ """
+
+
+@@ -82,6 +84,16 @@ def build_parser() -> argparse.ArgumentParser:
+     validate_parser = commands.add_parser("validate", help="validate a saved TTS plan")
+     validate_parser.add_argument("input", type=Path)
+
++
++    explain_parser = commands.add_parser(
++        "explain", help="explain a saved TTS plan in human-readable form"
++    )
++    explain_parser.add_argument("input", type=Path)
++    explain_parser.add_argument(
++        "--details",
++        action="store_true",
++        help="include IDs, offsets, provenance, and plan identity details",
++    )
+     inspect_parser = commands.add_parser("inspect", help="inspect a saved TTS plan")
+     inspect_parser.add_argument("input", type=Path)
+     inspect_parser.add_argument("--unit", type=int)
+@@ -197,6 +209,9 @@ def main(argv: list[str] | None = None) -> int:
+             print(f"units: {len(plan.units)}")
+             print(f"warnings: {len(plan.warnings)}")
+             return 0
++        if args.command == "explain":
++            print(format_explanation(plan, details=args.details), end="")
++            return 0
+         _inspect(plan, args)
+         return 0
+     except (OSError, UtterPlanError, ValueError, TypeError) as exc:
+diff --git a/utterplan/explain.py b/utterplan/explain.py
+new file mode 100644
+index 0000000..7cd72cf
+--- /dev/null
++++ b/utterplan/explain.py
+@@ -0,0 +1,368 @@
++from __future__ import annotations
++
++import json
++from collections.abc import Mapping
++from typing import Literal
++
++from .model import (
++    AudioDirective,
++    BoundaryEvent,
++    Marker,
++    PlanSegment,
++    PlanUnit,
++    PronunciationDirective,
++    ResolvedPause,
++    SegmentDirectives,
++    UtterancePlan,
++    VoiceDirective,
++)
++
++_BOUNDARY_KINDS = {
++    "sentence": "sentence boundary",
++    "paragraph": "paragraph boundary",
++    "parenthetical": "parenthetical boundary",
++    "clausal_comma": "clause boundary",
++    "voice_change": "voice change",
++    "explicit": "explicit boundary",
++}
++_ORIGINS = {
++    "ssmd": "from SSMD",
++    "phrasplit": "detected by phrasplit",
++    "planner": "automatic planner",
++    "plain": "from plain-text structure",
++}
++
++
++def _quote(value: str) -> str:
++    return json.dumps(value, ensure_ascii=False)
++
++
++def _count(value: int, singular: str, plural: str | None = None) -> str:
++    return f"{value} {singular if value == 1 else plural or singular + 's'}"
++
++
++def _replacement_count(plan: UtterancePlan) -> str:
++    count = len(plan.preparation.replacements)
++    return "no replacements" if count == 0 else _count(count, "replacement", "replacements")
++
++
++def _format_seconds(seconds: float) -> str:
++    return f"{seconds:.2f} s"
++
++
++def format_explanation(plan: UtterancePlan, *, details: bool = False) -> str:
++    """Return a deterministic, human-oriented explanation of a compiled plan."""
++    lines = ["UtterPlan explanation", ""]
++    _format_plan_summary(plan, lines, details=details)
++    _format_preparation(plan, lines, details=details)
++    _format_speech_plan(plan, lines, details=details)
++    if details:
++        _format_language_runs(plan, lines)
++        _format_metadata(plan, lines)
++        _format_diagnostics(plan, lines)
++    _format_warnings(plan, lines)
++    return "\n".join(lines).rstrip() + "\n"
++
++
++def _format_plan_summary(plan: UtterancePlan, lines: list[str], *, details: bool) -> None:
++    config = plan.config
++    pauses = config.get("pauses", {})
++    pause_mode = pauses.get("mode", "") if isinstance(pauses, Mapping) else ""
++    lines.extend(
++        [
++            "Plan",
++            f"  input: {plan.source.format}",
++            f"  default language: {config.get('language', '')}",
++            f"  preparation: {plan.preparation.backend}, "
++            f"{_replacement_count(plan)}",
++            f"  pause mode: {pause_mode}",
++            f"  grouping: {config.get('unit', '')}",
++            f"  result: {_count(len(plan.units), 'unit')}, "
++            f"{_count(len(plan.segments), 'segment')}",
++            "",
++        ]
++    )
++    if not details:
++        return
++
++    producer = plan.producer
++    producer_name = producer.get("name", "") if isinstance(producer, Mapping) else ""
++    producer_version = producer.get("version") if isinstance(producer, Mapping) else None
++    producer_text = str(producer_name)
++    if producer_version:
++        producer_text = f"{producer_text} {producer_version}"
++    lines.extend(
++        [
++            "Details",
++            f"  format: {plan.format}",
++            f"  schema: {plan.schema_version}",
++            f"  producer: {producer_text}",
++            f"  plan id: {plan.plan_id}",
++            f"  structural text: {len(plan.texts.structural)} characters",
++            f"  spoken text: {len(plan.texts.spoken)} characters",
++            f"  language runs: {len(plan.languages)}",
++            f"  annotations: {len(plan.annotations)}",
++            f"  boundaries: {len(plan.boundaries)}",
++            f"  tokens: {len(plan.tokens)}",
++            f"  markers: {len(plan.markers)}",
++            "",
++        ]
++    )
++
++
++def _format_preparation(plan: UtterancePlan, lines: list[str], *, details: bool) -> None:
++    replacements = plan.preparation.replacements
++    lines.extend(["Text preparation"])
++    if not replacements:
++        lines.append("  No written-to-spoken changes.")
++        lines.append("")
++        return
++
++    lines.append(f"  {_count(len(replacements), 'change', 'changes')}:")
++    for replacement in replacements:
++        source = str(replacement.get("source", ""))
++        replacement_text = str(replacement.get("replacement", ""))
++        label = _replacement_label(replacement)
++        suffix = f"  ({label})" if label else ""
++        lines.append(f"    {_quote(source)} -> {_quote(replacement_text)}{suffix}")
++        if details:
++            lines.append(
++                "      structural "
++                f"{replacement.get('source_start', 0)}:{replacement.get('source_end', 0)}"
++                " -> spoken "
++                f"{replacement.get('output_start', 0)}:{replacement.get('output_end', 0)}"
++            )
++    lines.append("")
++
++
++def _replacement_label(replacement: Mapping[str, object]) -> str:
++    kind = replacement.get("kind")
++    rule = replacement.get("rule")
++    if kind and rule and str(kind) != str(rule):
++        return f"{kind}: {rule}"
++    if rule:
++        return str(rule)
++    if kind:
++        return str(kind)
++    return ""
++
++
++def _format_speech_plan(plan: UtterancePlan, lines: list[str], *, details: bool) -> None:
++    segments_by_id = {segment.id: segment for segment in plan.segments}
++    markers_by_id = {marker.id: marker for marker in plan.markers}
++    boundaries_by_id = {boundary.id: boundary for boundary in plan.boundaries}
++    lines.extend(["Speech plan"])
++    for number, unit in enumerate(plan.units, start=1):
++        lines.append(f"  Unit {number}: {unit.kind}")
++        _format_markers(unit, markers_by_id, lines, details=details)
++        for segment_number, segment_id in enumerate(unit.segment_ids, start=1):
++            segment = segments_by_id[segment_id]
++            lines.extend(
++                _format_segment(
++                    segment,
++                    segment_number,
++                    boundaries_by_id,
++                    details=details,
++                )
++            )
++        if details:
++            lines.append(f"    id: {unit.id}")
++            lines.append(f"    spoken: {unit.spoken_start}:{unit.spoken_end}")
++            lines.append(f"    content hash: {unit.content_hash}")
++        lines.append("")
++
++
++def _format_markers(
++    unit: PlanUnit,
++    markers_by_id: Mapping[str, Marker],
++    lines: list[str],
++    *,
++    details: bool,
++) -> None:
++    markers = [markers_by_id[marker_id] for marker_id in unit.marker_ids]
++    if not markers:
++        return
++    if not details:
++        names = ", ".join(f"@{marker.name}" for marker in markers)
++        lines.append(f"    markers: {names}")
++        return
++    lines.append("    markers:")
++    for marker in markers:
++        attrs = f" {_json(marker.attrs)}" if marker.attrs else ""
++        lines.append(
++            f"      @{marker.name} at spoken {marker.spoken_position} ({marker.id}){attrs}"
++        )
++
++
++def _format_segment(
++    segment: PlanSegment,
++    number: int,
++    boundaries_by_id: Mapping[str, BoundaryEvent],
++    *,
++    details: bool,
++) -> list[str]:
++    result = [f"    {number}. [{segment.language}] {_quote(segment.text)}"]
++    result.extend(
++        _format_pause(segment.pause_before, boundaries_by_id, edge="before", details=details)
++    )
++    result.extend(_format_directives(segment.directives))
++    result.extend(
++        _format_pause(segment.pause_after, boundaries_by_id, edge="after", details=details)
++    )
++    if details:
++        result.extend(
++            [
++                f"       id: {segment.id}",
++                f"       spoken: {segment.spoken_start}:{segment.spoken_end}",
++                f"       structure: paragraph {segment.paragraph}, "
++                f"sentence {segment.sentence}, clause {segment.clause}",
++                f"       tokens: {len(segment.token_indices)}",
++                f"       annotations: {', '.join(segment.annotation_ids) if segment.annotation_ids else 'none'}",
++            ]
++        )
++        if segment.structural_start is not None and segment.structural_end is not None:
++            result.append(f"       structural: {segment.structural_start}:{segment.structural_end}")
++    return result
++
++
++def _format_pause(
++    pause: ResolvedPause,
++    boundaries_by_id: Mapping[str, BoundaryEvent],
++    *,
++    edge: Literal["before", "after"],
++    details: bool,
++) -> list[str]:
++    if not pause.events and pause.seconds == 0:
++        return []
++    causes = []
++    for event_id in pause.events:
++        boundary = boundaries_by_id.get(event_id)
++        cause = _boundary_description(boundary) if boundary is not None else f"boundary {event_id}"
++        if cause not in causes:
++            causes.append(cause)
++    description = " + ".join(causes)
++    line = f"       {edge}: pause {_format_seconds(pause.seconds)}"
++    if description:
++        line += f": {description}"
++    result = [line]
++    if details and pause.events:
++        result.append(f"         events: {', '.join(pause.events)}")
++        for event_id in pause.events:
++            boundary = boundaries_by_id.get(event_id)
++            if boundary is None:
++                continue
++            strength = f", strength {boundary.strength}" if boundary.strength else ""
++            attrs = f", attrs {_json(boundary.attrs)}" if boundary.attrs else ""
++            result.append(
++                f"         boundary {boundary.id}: kind {boundary.kind}, "
++                f"origin {boundary.origin}{strength}{attrs}"
++            )
++    return result
++
++
++def _boundary_description(boundary: BoundaryEvent) -> str:
++    detected_kind = boundary.attrs.get("detected_kind")
++    if detected_kind == "parenthetical_open":
++        label = "parenthetical opening"
++    elif detected_kind == "parenthetical_close":
++        label = "parenthetical closing"
++    else:
++        label = _BOUNDARY_KINDS.get(boundary.kind, f'boundary "{boundary.kind}"')
++    origin = _ORIGINS.get(boundary.origin)
++    return f"{label}, {origin}" if origin else label
++
++
++def _format_directives(directives: SegmentDirectives) -> list[str]:
++    result: list[str] = []
++    if directives.voice is not None:
++        result.append(f"       voice: {_format_voice(directives.voice)}")
++    if directives.pronunciation is not None:
++        result.append(f"       pronunciation: {_format_pronunciation(directives.pronunciation)}")
++    if directives.prosody is not None:
++        values = []
++        for label, value in (
++            ("rate", directives.prosody.rate),
++            ("pitch", directives.prosody.pitch),
++            ("volume", directives.prosody.volume),
++        ):
++            if value is not None:
++                values.append(f"{label} {value}")
++        if values:
++            result.append(f"       prosody: {', '.join(values)}")
++    if directives.emphasis is not None:
++        result.append(f"       emphasis: {directives.emphasis.level}")
++    if directives.audio is not None:
++        result.append(f"       audio: {_format_audio(directives.audio)}")
++    return result
++
++
++def _format_voice(directive: VoiceDirective) -> str:
++    return directive.reference
++
++
++def _format_pronunciation(directive: PronunciationDirective) -> str:
++    return f"/{directive.phonemes}/ ({directive.alphabet})"
++
++
++def _format_audio(directive: AudioDirective) -> str:
++    result = _quote(directive.src)
++    if directive.clip_begin is not None or directive.clip_end is not None:
++        result += f" (clip {directive.clip_begin or ''}..{directive.clip_end or ''}"
++        if directive.speed is not None:
++            result += f", speed {directive.speed}"
++        result += ")"
++    elif directive.speed is not None:
++        result += f" (speed {directive.speed})"
++    return result
++
++
++def _format_language_runs(plan: UtterancePlan, lines: list[str]) -> None:
++    lines.extend(["Language runs"])
++    if not plan.languages:
++        lines.append("  None.")
++    else:
++        for run in plan.languages:
++            lines.append(
++                f"  {run.language}  spoken {run.spoken_start}:{run.spoken_end}"
++                f"  source: {run.source}"
++            )
++    lines.append("")
++
++
++def _format_metadata(plan: UtterancePlan, lines: list[str]) -> None:
++    lines.append("Document metadata")
++    if plan.document_metadata:
++        lines.extend(f"  {line}" for line in _json(plan.document_metadata, indent=2).splitlines())
++    else:
++        lines.append("  None.")
++    lines.append("")
++
++
++def _format_diagnostics(plan: UtterancePlan, lines: list[str]) -> None:
++    lines.append("Diagnostics")
++    if not plan.diagnostics:
++        lines.append("  None.")
++    else:
++        for diagnostic in plan.diagnostics:
++            location = f" ({diagnostic.path})" if diagnostic.path else ""
++            lines.append(
++                f"  {diagnostic.code} [{diagnostic.severity}]{location}: {diagnostic.message}"
++            )
++    lines.append("")
++
++
++def _format_warnings(plan: UtterancePlan, lines: list[str]) -> None:
++    warnings = list(plan.warnings)
++    preparation_warnings = list(plan.preparation.warnings)
++    if not warnings and not preparation_warnings:
++        lines.append("No warnings.")
++        return
++    lines.append("Warnings")
++    for warning in warnings:
++        lines.append(f"  - {warning}")
++    for warning in preparation_warnings:
++        lines.append(f"  - preparation: {warning}")
++
++
++def _json(value: object, *, indent: int | None = None) -> str:
++    return json.dumps(value, ensure_ascii=False, sort_keys=True, indent=indent)

@@ -1,0 +1,56 @@
+entries:
+  - kind: added
+    summary: Added explain CLI command that renders compiled plans as human-readable speech narratives
+    body: >
+      The explain command presents prepared wording, render units, languages,
+      resolved pauses, directives, markers, and warnings. The --details flag
+      adds IDs, offsets, provenance, hashes, and plan identity information.
+    status: accepted
+    source_refs:
+      - git:402275374979b9372c1491072c4e29b642da523f
+    paths:
+      - utterplan/explain.py
+      - utterplan/cli.py
+      - docs/cli.md
+      - docs/debugging.md
+
+  - kind: changed
+    summary: Improved consumer contract with stable renderer input view and directive handling
+    body: >
+      Consumers may now rely on documented plan-level fields for renderer input.
+      Directive handling was improved with better pause policy and PyKokoro
+      migration parity. The consumer guide documents the immutability contract
+      for completed plans.
+    status: accepted
+    source_refs:
+      - git:2c64e291f0e568310afb7ca5e770ef2b691d9452
+    paths:
+      - utterplan/directives.py
+      - utterplan/model.py
+      - utterplan/parsers.py
+      - utterplan/planner.py
+      - docs/consumer-guide.md
+
+  - kind: added
+    summary: Added schema versioning with frozen v1 schema and migration framework
+    body: >
+      Schema v1 is frozen and packaged under a versioned schema-history path.
+      UtterPlan can inspect and migrate supported historical plan JSON before
+      constructing the current UtterancePlan. Migration is representation
+      conversion, not replanning. The migrate command supports --check and
+      refuses output overwrite unless --force is supplied.
+    status: accepted
+    source_refs:
+      - git:66a88b6a7fbe4cf9e0247cfd81675050f5934fea
+    paths:
+      - utterplan/migration.py
+      - utterplan/schema_registry.py
+      - utterplan/schemas/v1.schema.json
+      - tests/schema_history/v1/basic.json
+      - tests/schema_history/v1/directives.json
+      - tests/schema_history/v1/markers.json
+      - tests/schema_history/v1/multilingual.json
+      - tests/schema_history/v1/parenthetical.json
+      - tests/schema_history/v1/spokenform_offsets.json
+      - tests/schema_history/v1/ssmd_breaks.json
+      - tests/test_migration_framework.py

@@ -62,7 +62,6 @@ utterplan explain chapter.utterplan.json --details
 
 The default output shows the prepared wording, render units, ordered segments, languages, resolved pauses, directives, markers, and warnings. Add `--details` for IDs, offsets, provenance, hashes, and plan identity information. Use `inspect` instead when you need raw fields such as tokens, boundaries, or a specific segment.
 
-
 ## Planning controls
 
 - `--unit paragraph|sentence` chooses render-unit grouping.

@@ -125,3 +125,26 @@ def test_voice_bindings_and_segment_logical_voice_remain_separate() -> None:
     assert plan.segments[0].directives.voice.reference != "voice-a"
     assert "offset_map" not in plan.to_dict()["preparation"]
     assert plan == type(plan).from_json(plan.to_json())
+
+
+def test_language_detection_header_is_preserved_as_portable_metadata() -> None:
+    text = "---\nlanguage_detection:\n  mode: auto\n  languages: [de, en]\n---\nHallo."
+    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan(text)
+    assert plan.document_metadata["language_detection"] == {
+        "mode": "auto",
+        "languages": ["de", "en"],
+    }
+    restored = type(plan).from_json(plan.to_json())
+    assert restored.document_metadata == plan.document_metadata
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        "language_detection: true",
+        "language_detection:\n  mode: auto\n  languages: [de, 1]",
+    ],
+)
+def test_language_detection_header_shape_is_validated(header: str) -> None:
+    with pytest.raises(PlanFormatError, match="header.invalid"):
+        UtterancePlanner(PlannerConfig(language="en-us")).plan(f"---\n{header}\n---\nHallo.")

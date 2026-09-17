@@ -1,0 +1,47 @@
+{
+  "texts": { "structural": "Hello world", "spoken": "Hello world" },
+  "boundaries": [
+    {
+      "position": 5,
+      "kind": "explicit",
+      "seconds": 0.3,
+      "origin": "ssmd",
+      "strength": "medium",
+      "attrs": {
+        "anchor": "after",
+        "pause_origin": "planner_default",
+        "strength": "medium"
+      }
+    }
+  ],
+  "segments": [
+    {
+      "text": "Hello",
+      "spoken_start": 0,
+      "spoken_end": 5,
+      "language": "en-us",
+      "paragraph": 0,
+      "sentence": 0,
+      "clause": 0,
+      "pause_before": { "seconds": 0.0, "events": [] },
+      "pause_after": { "seconds": 0.3, "events": ["boundary-000000"] },
+      "directives": {},
+      "token_indices": [0],
+      "annotation_ids": ["annotation-000000"]
+    },
+    {
+      "text": " world",
+      "spoken_start": 5,
+      "spoken_end": 11,
+      "language": "en-us",
+      "paragraph": 0,
+      "sentence": 0,
+      "clause": 1,
+      "pause_before": { "seconds": 0.0, "events": [] },
+      "pause_after": { "seconds": 0.0, "events": [] },
+      "directives": {},
+      "token_indices": [1],
+      "annotation_ids": ["annotation-000000"]
+    }
+  ]
+}

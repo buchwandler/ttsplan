@@ -98,6 +98,11 @@ class SSMDDocumentParser:
                     )
                 )
             elif kind == "paragraph":
+                paragraph_origin = _duration_origin(
+                    {**attrs, "strength": "x-strong"}, config, parsed.header
+                )
+                if paragraph_origin == "none":
+                    paragraph_origin = "planner_default"
                 boundaries.append(
                     BoundaryEvent(
                         id=f"boundary-{len(boundaries):06d}",
@@ -109,11 +114,18 @@ class SSMDDocumentParser:
                         attrs={
                             **attrs,
                             "anchor": event_anchor,
-                            "pause_origin": _duration_origin(attrs, config, parsed.header),
+                            "strength": "p",
+                            "source": paragraph_origin,
+                            "pause_origin": paragraph_origin,
                         },
                     )
                 )
         metadata = {"header": dict(parsed.header)}
+        language_detection = _normalize_language_detection(
+            parsed.header.get("language_detection"), config, warnings
+        )
+        if language_detection is not None:
+            metadata["language_detection"] = language_detection
         if parsed.header.get("voice_bindings") is not None:
             metadata["voice_bindings"] = parsed.header["voice_bindings"]
         return ParsedDocument(
@@ -141,7 +153,7 @@ class SSMDDocumentParser:
             return
 
         header = front_matter.data
-        known = {"pause_defaults", "voice_bindings"}
+        known = {"pause_defaults", "voice_bindings", "language_detection"}
         unknown = sorted(set(header) - known)
         if unknown:
             message = f"unknown SSMD header key(s): {', '.join(unknown)}"
@@ -149,6 +161,8 @@ class SSMDDocumentParser:
                 raise PlanFormatError(message, code="header.unknown")
             if config.ssmd.unknown_header == "warn":
                 warnings.append(message)
+
+        _normalize_language_detection(header.get("language_detection"), config, warnings)
 
         pause_defaults = header.get("pause_defaults")
         if pause_defaults is None:
@@ -177,6 +191,29 @@ class SSMDDocumentParser:
                     parse_duration(value, field_name=f"pause_defaults.{key}")
             except ConfigurationError as exc:
                 _header_invalid(config, warnings, str(exc))
+
+
+def _normalize_language_detection(
+    value: Any, config: PlannerConfig, warnings: list[str]
+) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        _header_invalid(config, warnings, "language_detection must be a mapping")
+        return None
+    mode = value.get("mode")
+    languages = value.get("languages")
+    if not isinstance(mode, str) or not mode:
+        _header_invalid(config, warnings, "language_detection.mode must be a non-empty string")
+        return None
+    if not isinstance(languages, (list, tuple)) or not all(
+        isinstance(language, str) and language for language in languages
+    ):
+        _header_invalid(
+            config, warnings, "language_detection.languages must be a list of non-empty strings"
+        )
+        return None
+    return {"mode": mode, "languages": list(languages)}
 
 
 def _header_invalid(config: PlannerConfig, warnings: list[str], message: str) -> None:

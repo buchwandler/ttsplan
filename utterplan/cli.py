@@ -84,7 +84,6 @@ def build_parser() -> argparse.ArgumentParser:
     validate_parser = commands.add_parser("validate", help="validate a saved TTS plan")
     validate_parser.add_argument("input", type=Path)
 
-
     explain_parser = commands.add_parser(
         "explain", help="explain a saved TTS plan in human-readable form"
     )

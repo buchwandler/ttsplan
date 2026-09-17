@@ -1,0 +1,4 @@
+{
+  "texts": { "structural": "Hallo.", "spoken": "Hallo." },
+  "language_detection": { "mode": "auto", "languages": ["de", "en"] }
+}

@@ -1,0 +1,35 @@
+{
+  "texts": { "structural": "GIF.", "spoken": "GIF." },
+  "segments": [
+    {
+      "text": "GIF",
+      "spoken_start": 0,
+      "spoken_end": 3,
+      "language": "en-us",
+      "paragraph": 0,
+      "sentence": 0,
+      "clause": 0,
+      "pause_before": { "seconds": 0.0, "events": [] },
+      "pause_after": { "seconds": 0.0, "events": [] },
+      "directives": {
+        "pronunciation": { "phonemes": "dʒɪf", "alphabet": "ipa" }
+      },
+      "token_indices": [0],
+      "annotation_ids": ["annotation-000000", "annotation-000001"]
+    },
+    {
+      "text": ".",
+      "spoken_start": 3,
+      "spoken_end": 4,
+      "language": "en-us",
+      "paragraph": 0,
+      "sentence": 0,
+      "clause": 1,
+      "pause_before": { "seconds": 0.0, "events": [] },
+      "pause_after": { "seconds": 0.0, "events": [] },
+      "directives": {},
+      "token_indices": [0],
+      "annotation_ids": ["annotation-000000"]
+    }
+  ]
+}

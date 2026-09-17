@@ -28,7 +28,7 @@ def test_basic_explanation_is_human_oriented_and_exact() -> None:
         "  No written-to-spoken changes.\n\n"
         "Speech plan\n"
         "  Unit 1: paragraph\n"
-        "    1. [en-us] \"Hello.\"\n\n"
+        '    1. [en-us] "Hello."\n\n'
         "No warnings.\n"
     )
     assert "sha256:" not in output
@@ -79,8 +79,8 @@ def test_multilingual_segments_are_in_render_order() -> None:
 
     labels = [output.index(label) for label in ("[en-us]", "[fr]", "[en-us]")]
     assert labels[0] < labels[1]
-    assert "[fr] \"Bonjour\"" in output
-    assert "[en-us] \".\"" in output
+    assert '[fr] "Bonjour"' in output
+    assert '[en-us] "."' in output
 
 
 def test_markers_are_shown_in_their_owning_unit() -> None:

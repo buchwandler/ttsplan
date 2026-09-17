@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, replace
 from typing import Any
 
@@ -221,6 +222,22 @@ def _segment(
                 if point is not None and start < point < end and _semantic_annotation(annotation)
             )
             ordered = sorted(cuts)
+            clause_breaks = {
+                boundary.position
+                for boundary in boundaries
+                if start < boundary.position < end and boundary_is_active(boundary, pause_config)
+            }
+            clause_breaks.update(
+                annotation.spoken_end
+                for annotation in annotations
+                if (
+                    annotation.spoken_end is not None
+                    and start < annotation.spoken_end < end
+                    and _semantic_annotation(annotation)
+                    and not _language_annotation(annotation)
+                )
+            )
+            current_clause = clause
             for part_start, part_end in zip(ordered, ordered[1:], strict=False):
                 if part_end <= part_start or not text[part_start:part_end].strip():
                     continue
@@ -233,11 +250,13 @@ def _segment(
                         language=run.language,
                         paragraph=paragraph,
                         sentence=sentence,
-                        clause=clause,
+                        clause=current_clause,
                         structural_start=None,
                         structural_end=None,
                     )
                 )
+                if part_end in clause_breaks:
+                    current_clause += 1
     return result
 
 
@@ -272,7 +291,42 @@ def _split_run(
         for left, right in zip(valid, valid[1:], strict=False)
     ):
         return [_FallbackSplit(0, len(text), 0, 0, text)]
-    return _repair_quote_boundaries(valid, text)
+    return _repair_quote_boundaries(_split_closing_quote_boundaries(valid, text), text)
+
+
+def _split_closing_quote_boundaries(items: list[Any], text: str) -> list[Any]:
+    pattern = re.compile(r'[.!?]["\'»”’]+\s+(?=[A-ZÄÖÜÀ-Þ])')
+    repaired: list[Any] = []
+    for item in items:
+        start = int(item.char_start)
+        sentence = int(getattr(item, "sentence_idx", 0) or 0)
+        paragraph = int(getattr(item, "paragraph_idx", 0) or 0)
+        for match in pattern.finditer(text[start : int(item.char_end)]):
+            end = start + match.start() + len(match.group(0).rstrip())
+            if end <= start or end >= int(item.char_end):
+                continue
+            repaired.append(
+                _FallbackSplit(
+                    start,
+                    end,
+                    paragraph,
+                    sentence,
+                    text[start:end],
+                )
+            )
+            sentence += 1
+            start += match.end()
+        if start < int(item.char_end):
+            repaired.append(
+                _FallbackSplit(
+                    start,
+                    int(item.char_end),
+                    paragraph,
+                    sentence,
+                    text[start : int(item.char_end)],
+                )
+            )
+    return repaired
 
 
 def _repair_quote_boundaries(items: list[Any], text: str) -> list[Any]:
@@ -444,6 +498,12 @@ def _attach_membership(
         )
         output.append(replace(segment, token_indices=token_indices, annotation_ids=annotation_ids))
     return output
+
+
+def _language_annotation(annotation: AnnotationSpan) -> bool:
+    return set(annotation.attrs).issubset({"lang", "language", "tag"}) and (
+        "lang" in annotation.attrs or "language" in annotation.attrs
+    )
 
 
 def _semantic_annotation(annotation: AnnotationSpan) -> bool:

@@ -2,53 +2,56 @@
 
 The sibling `../pykokoro` checkout is a read-only migration oracle. The normal
 UtterPlan package never imports it. The optional reference test invokes the
-frontend helper in a subprocess and compares normalized, engine-neutral
-semantics.
+frontend helper in a subprocess and records the PyKokoro version, Git revision,
+and dependency versions on every run.
 
 ## Tested snapshot
 
-The current parity run used:
+The tested snapshot is discovered dynamically. No PyKokoro version, commit, or
+fixture count is a hard-coded parity requirement. The helper reports the actual
+values in its JSON output so a refreshed sibling checkout produces auditable
+evidence.
 
-- PyKokoro version: `0.9.8`
-- PyKokoro commit: `cc4271515011cbbe8843fc3673393063044c22e9`
-- `phrasplit`: `0.3.9`
-- `spokenform`: `0.4.4.dev0+g71feb9cb4.d19800101`
-- `ssmd`: `0.8.7`
+The corpus includes plain text, spokenform preparation, multilingual spans,
+parentheticals, paragraphs, explicit breaks, markers, pronunciation, prosody,
+audio metadata, logical voices, quoted sentence boundaries, punctuation,
+Unicode, empty input, and language detection metadata.
 
-The corpus includes abbreviations, units and numbers, multilingual spans,
-parentheticals, multiple paragraphs, explicit breaks, markers, pronunciation
-annotations, quoted sentence boundaries, punctuation, Unicode, and empty
-input. The helper reports the version, revision, and dependency versions with
-each run so the evidence can be refreshed without hard-coded test counts.
+## Strict comparison policy
 
-## Comparison policy
+The migration parity test compares the renderer-facing semantic contract:
 
-The helper emits normalized structural text, spoken text, preparation records,
-annotations, boundaries, and frontend segments. The parity test requires exact
-spoken text and compares non-whitespace segment content. It compares language
-and paragraph ownership when segment counts align, normalizing language tags
-such as `fr` and `fr-fr` to their base language. Provider-specific segment
-splits and whitespace-only records are normalized away.
+- exact spoken text;
+- ordered segment text, spoken offsets, language, paragraph, sentence, and
+  clause ownership;
+- language runs;
+- annotation spoken ranges and portable attributes;
+- explicit and derived boundary positions, provenance, and resolved duration;
+- marker position and ownership;
+- unit ranges and segment composition.
 
-Annotation counts are compared after normalizing provider-specific annotation
-kind names. Typed UtterPlan directives, resolved pauses, marker ownership, and
-unit records remain UtterPlan-native consumer contract behavior.
+Only documented normalizations are applied. Provider-specific annotation kind
+names, concrete voice resolution metadata, whitespace-only segment records, and
+language spelling variants such as `fr` and `fr-fr` are normalized. UtterPlan
+remains the authority for typed directives, final pause ownership, and immutable
+unit records.
 
-| Behavior                      | PyKokoro representation        | UtterPlan representation                 | Policy                                                   |
-| ----------------------------- | ------------------------------ | ---------------------------------------- | -------------------------------------------------------- |
-| Written-to-spoken preparation | Provider preparation object    | `TextPreparationInfo` and `texts.spoken` | Compare spoken text and normalized replacements          |
-| Segment text                  | Provider frontend segments     | `PlanSegment.text`                       | Compare non-whitespace content                           |
-| Language                      | Provider language metadata     | `PlanSegment.language`                   | Compare base language when aligned                       |
-| Coordinates                   | Provider offsets               | Spoken and structural documented ranges  | Compare normalized content and validate UtterPlan ranges |
-| Pauses                        | Provider boundary handling     | `ResolvedPause` plus `BoundaryEvent`     | Keep deterministic UtterPlan semantics                   |
-| Provider documents            | Request-local frontend objects | Released before plan construction        | Do not retain provider objects                           |
-| Phonemes and audio            | Renderer-specific              | Not present                              | Out of scope                                             |
+| Behavior                      | PyKokoro representation             | UtterPlan representation                    |
+| ----------------------------- | ----------------------------------- | ------------------------------------------- |
+| Written-to-spoken preparation | Provider preparation object         | `TextPreparationInfo` and `texts.spoken`    |
+| Segment content               | Frontend segments                   | `PlanSegment.text` and spoken offsets       |
+| Language                      | Prepared language runs              | `plan.languages` and `PlanSegment.language` |
+| Directives                    | Portable SSMD annotation attributes | Typed `SegmentDirectives`                   |
+| Pauses                        | Boundary events                     | `BoundaryEvent` and resolved segment pauses |
+| Markers and units             | Frontend boundary and unit grouping | `Marker` and `PlanUnit`                     |
+| Provider documents            | Request-local objects               | Released before plan construction           |
+| Phonemes and audio            | Renderer-specific                   | Out of scope for UtterPlan                  |
 
 Run the optional suite with:
 
 ```bash
-pytest -q -m reference
+python -m pytest -q -m reference
 ```
 
-A missing sibling checkout skips the reference test. Native tests must remain
-usable without PyKokoro.
+A missing sibling checkout skips the reference test. Native tests remain usable
+without PyKokoro.

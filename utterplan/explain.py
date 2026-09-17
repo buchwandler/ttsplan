@@ -73,12 +73,10 @@ def _format_plan_summary(plan: UtterancePlan, lines: list[str], *, details: bool
             "Plan",
             f"  input: {plan.source.format}",
             f"  default language: {config.get('language', '')}",
-            f"  preparation: {plan.preparation.backend}, "
-            f"{_replacement_count(plan)}",
+            f"  preparation: {plan.preparation.backend}, {_replacement_count(plan)}",
             f"  pause mode: {pause_mode}",
             f"  grouping: {config.get('unit', '')}",
-            f"  result: {_count(len(plan.units), 'unit')}, "
-            f"{_count(len(plan.segments), 'segment')}",
+            f"  result: {_count(len(plan.units), 'unit')}, {_count(len(plan.segments), 'segment')}",
             "",
         ]
     )

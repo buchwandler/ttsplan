@@ -7,6 +7,35 @@ import pytest
 from utterplan import PauseConfig, PlannerConfig, UtterancePlan, UtterancePlanner
 
 
+def _fake_renderer(plan: UtterancePlan) -> None:
+    segment_by_id = {segment.id: segment for segment in plan.segments}
+    annotation_by_id = {annotation.id: annotation for annotation in plan.annotations}
+    marker_by_id = {marker.id: marker for marker in plan.markers}
+    assert plan.texts.spoken == plan.to_dict()["texts"]["spoken"]
+    for run in plan.languages:
+        assert run.language and run.spoken_end >= run.spoken_start
+    for token in plan.tokens:
+        assert plan.texts.spoken[token.spoken_start : token.spoken_end] == token.text
+    for annotation in plan.annotations:
+        assert annotation.id in annotation_by_id
+    for boundary in plan.boundaries:
+        assert boundary.position >= 0
+    for segment in plan.segments:
+        assert segment.id in segment_by_id
+        _ = segment.directives.to_dict()
+        _ = segment.pause_before.seconds + segment.pause_after.seconds
+        for token_index in segment.token_indices:
+            _ = plan.tokens[token_index].text
+        for annotation_id in segment.annotation_ids:
+            _ = annotation_by_id[annotation_id].attrs
+    for marker in plan.markers:
+        assert marker.id in marker_by_id
+    for unit in plan.units:
+        _ = [segment_by_id[segment_id].text for segment_id in unit.segment_ids]
+        _ = [marker_by_id[marker_id].name for marker_id in unit.marker_ids]
+    _ = plan.document_metadata
+
+
 def assert_public_consumer_contract(plan: UtterancePlan) -> None:
     segments = {segment.id: segment for segment in plan.segments}
     annotations = {annotation.id: annotation for annotation in plan.annotations}
@@ -37,6 +66,17 @@ def assert_public_consumer_contract(plan: UtterancePlan) -> None:
     assert [segment.text for segment in restored.segments] == [
         segment.text for segment in plan.segments
     ]
+
+
+def test_fake_renderer_cannot_mutate_completed_plan() -> None:
+    plan = UtterancePlanner(PlannerConfig(language="en-us")).plan(
+        '---\nvoice_bindings:\n  narrator: voice-a\n---\nOne. @mark [Two]{voice="narrator"}.'
+    )
+    before = plan.to_json(indent=None)
+    plan_id = plan.plan_id
+    _fake_renderer(plan)
+    assert plan.to_json(indent=None) == before
+    assert plan.plan_id == plan_id
 
 
 def test_plain_spokenform_consumer_contract() -> None:

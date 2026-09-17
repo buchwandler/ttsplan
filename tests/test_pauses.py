@@ -1,6 +1,8 @@
 import pytest
 
 from utterplan import PauseConfig, PlannerConfig, UtterancePlanner
+from utterplan.model import BoundaryEvent, PlanSegment
+from utterplan.pauses import resolve_pauses
 
 TEXT = "The backup battery (still warm from the morning test) sat beside the console."
 
@@ -125,3 +127,60 @@ def test_explicit_ssmd_break_remains_active_when_automatic_pauses_are_disabled()
 
 def test_default_pause_mode_remains_tts():
     assert PauseConfig().mode == "tts"
+
+
+def test_high_confidence_clausal_comma_and_zero_duration_boundary_are_resolved() -> None:
+    segment = PlanSegment("seg", "Hello", 0, 5, "en-us")
+    boundaries = (
+        BoundaryEvent(
+            "comma",
+            5,
+            "clausal_comma",
+            origin="phrasplit",
+            attrs={"automatic": True, "confidence": "1.0"},
+        ),
+        BoundaryEvent(
+            "zero",
+            5,
+            "explicit",
+            seconds=0.0,
+            origin="ssmd",
+            attrs={"anchor": "after"},
+        ),
+    )
+    resolved = resolve_pauses([segment], list(boundaries), PauseConfig(mode="auto"))[0]
+    assert resolved.pause_after.seconds == pytest.approx(0.3)
+    assert resolved.pause_after.events == ("comma", "zero")
+
+
+def test_overlapping_boundary_sources_keep_provenance_and_choose_longest_pause() -> None:
+    segment = PlanSegment("seg", "Hello", 0, 5, "en-us")
+    boundaries = (
+        BoundaryEvent(
+            "sentence",
+            5,
+            "sentence",
+            seconds=0.6,
+            origin="planner",
+            attrs={"automatic": True},
+        ),
+        BoundaryEvent(
+            "break",
+            5,
+            "explicit",
+            seconds=0.2,
+            origin="ssmd",
+            attrs={"anchor": "after"},
+        ),
+    )
+    resolved = resolve_pauses([segment], list(boundaries), PauseConfig(mode="auto"))[0]
+    assert resolved.pause_after.seconds == pytest.approx(0.6)
+    assert resolved.pause_after.events == ("break", "sentence")
+
+
+def test_unit_content_hash_tracks_semantic_content() -> None:
+    first = UtterancePlanner(PlannerConfig(language="en-us")).plan("One.")
+    second = UtterancePlanner(PlannerConfig(language="en-us")).plan("Two.")
+    assert first.units[0].content_hash != second.units[0].content_hash
+    first.validate()
+    second.validate()

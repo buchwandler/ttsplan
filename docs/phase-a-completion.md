@@ -11,8 +11,7 @@ audio dependencies.
 
 - Target package release: `0.1.0`
 - UtterPlan schema version: `1`
-- PyKokoro parity target: `0.9.8`
-- PyKokoro parity commit: `cc4271515011cbbe8843fc3673393063044c22e9`
+- PyKokoro parity target: the supplied sibling checkout at `../pykokoro`
 - Tested migration floors: `phrasplit>=0.3.9,<0.4` and
   `spokenform>=0.4.3,<0.5`
 

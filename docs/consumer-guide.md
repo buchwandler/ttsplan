@@ -37,6 +37,22 @@ Voice bindings are logical names, not backend voice IDs. Consumers must not
 recompute pause policy, resolve engine voices in UtterPlan, or depend on provider
 documents that were used during planning.
 
+## Stable renderer input view
+
+Consumers may rely on these plan-level fields: `texts.spoken`, `preparation`, `languages`, `tokens`, `annotations`, `boundaries`, `segments`, `units`, `markers`, and `document_metadata`. Each segment additionally provides its ID, spoken text range, language, paragraph/sentence/clause ownership, resolved pauses, typed directives, token indices, and annotation IDs.
+
+A completed plan is immutable consumer input. Consumers may inspect and adapt the data for G2P or rendering, but must not rewrite planning decisions or mutate the plan. The canonical invariant is:
+
+```python
+before = plan.to_json(indent=None)
+plan_id = plan.plan_id
+consume_plan(plan)
+assert plan.to_json(indent=None) == before
+assert plan.plan_id == plan_id
+```
+
+This contract does not require provider documents, models, phonemes, model token IDs, or audio to remain available after planning.
+
 ## Renderer-neutral pseudocode
 
 ```python

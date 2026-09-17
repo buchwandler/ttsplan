@@ -57,7 +57,13 @@
     "segments": { "type": "array", "items": { "$ref": "#/$defs/segment" } },
     "units": { "type": "array", "items": { "$ref": "#/$defs/unit" } },
     "markers": { "type": "array", "items": { "$ref": "#/$defs/marker" } },
-    "document_metadata": { "type": "object" },
+    "document_metadata": {
+      "type": "object",
+      "properties": {
+        "language_detection": { "$ref": "#/$defs/language_detection" }
+      },
+      "additionalProperties": true
+    },
     "warnings": { "type": "array", "items": { "type": "string" } },
     "diagnostics": {
       "type": "array",
@@ -88,6 +94,18 @@
       "additionalProperties": false
     },
     "range": { "type": "integer", "minimum": 0 },
+    "language_detection": {
+      "type": "object",
+      "required": ["mode", "languages"],
+      "properties": {
+        "mode": { "type": "string", "minLength": 1 },
+        "languages": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
     "language": {
       "type": "object",
       "required": ["id", "spoken_start", "spoken_end", "language", "source"],

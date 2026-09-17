@@ -1,0 +1,15 @@
+{
+  "texts": { "structural": "One. Two.", "spoken": "One. Two." },
+  "markers": [
+    { "name": "mark", "spoken_position": 4, "attrs": { "name": "mark" } }
+  ],
+  "units": [
+    {
+      "kind": "paragraph",
+      "spoken_start": 0,
+      "spoken_end": 9,
+      "segment_ids": ["seg-000000", "seg-000001"],
+      "marker_ids": ["marker-000000"]
+    }
+  ]
+}

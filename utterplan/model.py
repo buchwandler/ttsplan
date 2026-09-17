@@ -879,6 +879,13 @@ def validate_plan(plan: UtterancePlan) -> None:
             raise PlanValidationError(
                 "marker position is outside spoken text", code="marker.out_of_range"
             )
+    previous_unit_end = 0
+    for expected_index, unit in enumerate(plan.units):
+        if unit.index != expected_index:
+            raise PlanValidationError("units must have contiguous indexes", code="unit.index")
+        if unit.spoken_start < previous_unit_end:
+            raise PlanValidationError("units must not overlap", code="unit.overlap")
+        previous_unit_end = unit.spoken_end
     for unit in plan.units:
         if not all(segment_id in segment_ids for segment_id in unit.segment_ids):
             raise PlanValidationError(
@@ -912,6 +919,10 @@ def validate_plan(plan: UtterancePlan) -> None:
     if len(assigned_markers) != len(set(assigned_markers)):
         raise PlanValidationError(
             "marker belongs to more than one unit", code="marker.unit_membership"
+        )
+    if set(assigned_markers) != marker_ids:
+        raise PlanValidationError(
+            "every marker must belong to exactly one unit", code="marker.unit_membership"
         )
     if plan.plan_id != semantic_hash(plan.semantic_dict()):
         raise PlanValidationError(

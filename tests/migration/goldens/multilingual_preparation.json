@@ -1,0 +1,29 @@
+{
+  "texts": {
+    "structural": "Hello Bonjour.",
+    "spoken": "Hello Bonjour."
+  },
+  "languages": [
+    {
+      "id": "lang-0",
+      "language": "en-us",
+      "source": "explicit-span",
+      "spoken_end": 6,
+      "spoken_start": 0
+    },
+    {
+      "id": "lang-1",
+      "language": "fr",
+      "source": "explicit-span",
+      "spoken_end": 13,
+      "spoken_start": 6
+    },
+    {
+      "id": "lang-2",
+      "language": "en-us",
+      "source": "explicit-span",
+      "spoken_end": 14,
+      "spoken_start": 13
+    }
+  ]
+}

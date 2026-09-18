@@ -15,6 +15,7 @@ sys.path.insert(0, str(REFERENCE))
 try:
     import pykokoro
     from pykokoro import GenerationConfig, KokoroPipeline, PipelineConfig
+    from pykokoro.stages.text_preparation import SpokenformTextPreparer
     from pykokoro.tokenizer import TokenizerConfig
 except ImportError as exc:
     raise SystemExit(f"reference checkout unavailable: {exc}") from exc
@@ -193,15 +194,24 @@ def _units(
 
 
 def normalize(text: str, *, unit: str = "paragraph") -> dict[str, object]:
+    # Explicitly supplying one legacy planning stage makes current PyKokoro
+    # execute its pre-UtterPlan frontend. This subprocess must remain an
+    # independent migration oracle rather than compiling UtterPlan itself.
     pipeline = KokoroPipeline(
         PipelineConfig(
             generation=GenerationConfig(lang="en-us"),
             tokenizer_config=TokenizerConfig(use_spacy=False),
             allow_experimental_frontend=True,
-        )
+        ),
+        text_preparer=SpokenformTextPreparer(),
     )
     frontend = pipeline.prepare_frontend(text, unit=unit)
     try:
+        if getattr(frontend, "_plan", None) is not None:
+            raise RuntimeError(
+                "reference helper selected PyKokoro's UtterPlan-backed frontend; "
+                "strict migration parity would be circular"
+            )
         document = frontend._doc
         segments = _segments(document)
         boundaries = _boundaries(document)

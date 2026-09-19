@@ -1,8 +1,7 @@
 # PyKokoro integration boundary
 
-UtterPlan is an independent planning compiler. PyKokoro is an optional consumer
-and parity oracle, not a runtime dependency of this package.
-
+UtterPlan is an independent planning compiler. PyKokoro is an optional consumer,
+not a runtime dependency of this package.
 The intended migration keeps the existing PyKokoro user API unchanged:
 
 ```text
@@ -45,10 +44,8 @@ renderer or acoustic variance after consuming the plan when legacy behavior
 requires it. Such variance must remain outside semantic plan identity and must
 not be added to UtterPlan merely to mirror renderer settings.
 
-## Reference parity
+## Compatibility ownership
 
-The optional reference suite runs PyKokoro in a subprocess and compares
-normalized engine-neutral semantics. It does not compare phonemes, model token
-IDs, sessions, audio, or model-derived timings. The pinned version, revision,
-and dependency versions used for a parity run belong in the reference evidence
-page, not in UtterPlan runtime metadata.
+Consumer-specific compatibility and integration tests belong in the PyKokoro
+repository. UtterPlan's own test suite validates the public semantic planning
+contract using repository-owned fixtures and goldens only.

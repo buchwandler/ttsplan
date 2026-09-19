@@ -79,8 +79,8 @@ PyKokoro or another renderer -> UtterPlan
 ```
 
 UtterPlan does not depend on PyKokoro, G2P engines, ONNX Runtime, or audio
-packages. PyKokoro remains an optional read-only parity reference during
-UtterPlan development.
+packages. Consumer-specific compatibility tests belong in the consuming
+renderer repository rather than UtterPlan's test suite.
 
 ## Documentation
 
@@ -105,7 +105,7 @@ Schema v1 is frozen and packaged under a versioned schema-history path. UtterPla
 
 ```bash
 python -m pip install -e '.[dev,docs]'
-python -m pytest -q -m 'not reference'
+python -m pytest -q
 ruff check .
 mypy utterplan
 python -m build

@@ -30,7 +30,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
         run: python -m ruff check .
       - name: Run tests
-        run: python -m pytest -q -m "not reference"
+        run: python -m pytest -q
 
   lower-bounds:
     runs-on: ubuntu-latest
@@ -51,7 +51,7 @@ jobs:
             "typing_extensions>=4.0"
           python -m pip install --no-deps -e .
       - name: Run lower-bound tests
-        run: python -m pytest -q -m "not reference"
+        run: python -m pytest -q
 
   package-smoke:
     runs-on: ubuntu-latest

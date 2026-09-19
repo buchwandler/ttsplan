@@ -77,7 +77,6 @@ exclude_patterns = [
     ".DS_Store",
     "README.md",
     "phase-a-completion.md",
-    "pykokoro-reference.md",
 ]
 
 

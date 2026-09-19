@@ -10,8 +10,8 @@
 8. Every offset has a documented coordinate space.
 9. Default planning is deterministic.
 10. Schema changes require explicit compatibility review.
-11. PyKokoro tests are migration tests, not runtime dependencies.
-12. Do not modify `../pykokoro` during Phase A.
+11. Repository tests must be self-contained and must not require sibling consumer checkouts.
+12. Consumer-specific compatibility testing belongs in the consumer repository.
 13. Released schema files are immutable and retained under versioned paths.
 14. Every supported older schema must retain a sequential migration path to current.
 15. Migrations operate on serialized plain data and may not call parser, planner, G2P, renderer, or audio stages.

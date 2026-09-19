@@ -3,28 +3,28 @@ schema_version: 2
 object_type: release_entry
 versioning:
   schema_version: 1
-  revision: 1
+  revision: 2
 entry_id: entry-0003
-release_version: 0.1.2
+release_version: 0.1.3
 kind: added
 summary: Added schema versioning with frozen v1 schema and migration framework
 status: accepted
 audience: null
 scopes: []
 source_refs:
-  - git:66a88b6a7fbe4cf9e0247cfd81675050f5934fea
+- git:66a88b6a7fbe4cf9e0247cfd81675050f5934fea
 paths:
-  - utterplan/migration.py
-  - utterplan/schema_registry.py
-  - utterplan/schemas/v1.schema.json
-  - tests/schema_history/v1/basic.json
-  - tests/schema_history/v1/directives.json
-  - tests/schema_history/v1/markers.json
-  - tests/schema_history/v1/multilingual.json
-  - tests/schema_history/v1/parenthetical.json
-  - tests/schema_history/v1/spokenform_offsets.json
-  - tests/schema_history/v1/ssmd_breaks.json
-  - tests/test_migration_framework.py
+- utterplan/migration.py
+- utterplan/schema_registry.py
+- utterplan/schemas/v1.schema.json
+- tests/schema_history/v1/basic.json
+- tests/schema_history/v1/directives.json
+- tests/schema_history/v1/markers.json
+- tests/schema_history/v1/multilingual.json
+- tests/schema_history/v1/parenthetical.json
+- tests/schema_history/v1/spokenform_offsets.json
+- tests/schema_history/v1/ssmd_breaks.json
+- tests/test_migration_framework.py
 issues: []
 prs: []
 sources: []

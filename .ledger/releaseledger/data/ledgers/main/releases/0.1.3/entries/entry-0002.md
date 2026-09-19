@@ -7,19 +7,20 @@ versioning:
 entry_id: entry-0002
 release_version: 0.1.3
 kind: changed
-summary: Improved consumer contract with stable renderer input view and directive
+summary:
+  Improved consumer contract with stable renderer input view and directive
   handling
 status: accepted
 audience: null
 scopes: []
 source_refs:
-- git:2c64e291f0e568310afb7ca5e770ef2b691d9452
+  - git:2c64e291f0e568310afb7ca5e770ef2b691d9452
 paths:
-- utterplan/directives.py
-- utterplan/model.py
-- utterplan/parsers.py
-- utterplan/planner.py
-- docs/consumer-guide.md
+  - utterplan/directives.py
+  - utterplan/model.py
+  - utterplan/parsers.py
+  - utterplan/planner.py
+  - docs/consumer-guide.md
 issues: []
 prs: []
 sources: []

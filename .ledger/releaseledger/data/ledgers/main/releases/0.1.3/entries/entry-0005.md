@@ -12,9 +12,9 @@ status: accepted
 audience: null
 scopes: []
 source_refs:
-- git:972d21bdfefcdc7ee04fc0d9ce00d1143dda4e78
+  - git:972d21bdfefcdc7ee04fc0d9ce00d1143dda4e78
 paths:
-- tests/reference/dump_pykokoro_frontend.py
+  - tests/reference/dump_pykokoro_frontend.py
 issues: []
 prs: []
 sources: []

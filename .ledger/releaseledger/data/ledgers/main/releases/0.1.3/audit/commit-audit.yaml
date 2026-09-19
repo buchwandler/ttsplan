@@ -11,243 +11,247 @@ git_head_sha: 7cd977966475fd9c03056e5f25aaffd3501a846d
 git_range: a56a3513d403d3d3e0eddccc10990f32d1a1b367..7cd977966475fd9c03056e5f25aaffd3501a846d
 commit_count: 6
 rows:
-- sha: 402275374979b9372c1491072c4e29b642da523f
-  source_ref: git:402275374979b9372c1491072c4e29b642da523f
-  short_sha: '4022753'
-  changed_paths:
-  - README.md
-  - docs/cli.md
-  - docs/debugging.md
-  - repairledger.toml
-  - tests/test_cli.py
-  - tests/test_explain.py
-  - utterplan/cli.py
-  - utterplan/explain.py
-  stats:
-    files_changed: 8
-    insertions: 560
-    deletions: 10
-  inspected: true
-  inspected_paths:
-  - README.md
-  - docs/cli.md
-  - docs/debugging.md
-  - tests/test_cli.py
-  - tests/test_explain.py
-  - utterplan/cli.py
-  - utterplan/explain.py
-  observed_behavior: Added explain CLI command that renders compiled plans as human-readable
-    speech narratives with optional detail mode
-  public_impact: public
-  decision: accepted
-  stale: false
-  evidence_subject: 'feat: explain command added'
-  target_entry_key: entry-0001
-  target_entry_id: entry-0001
-  notes: ''
-- sha: 2c64e291f0e568310afb7ca5e770ef2b691d9452
-  source_ref: git:2c64e291f0e568310afb7ca5e770ef2b691d9452
-  short_sha: 2c64e29
-  changed_paths:
-  - docs/cli.md
-  - docs/consumer-guide.md
-  - docs/phase-a-completion.md
-  - docs/pykokoro-reference.md
-  - spec/utterplan.schema.json
-  - tests/migration/__init__.py
-  - tests/migration/cases.py
-  - tests/migration/goldens/multilingual_preparation.json
-  - tests/migration/goldens/spokenform_numbers.json
-  - tests/migration/goldens/ssmd_break.json
-  - tests/migration/goldens/ssmd_language_detection.json
-  - tests/migration/goldens/ssmd_marker.json
-  - tests/migration/goldens/ssmd_pronunciation.json
-  - tests/migration/test_pykokoro_frontend_parity.py
-  - tests/reference/dump_pykokoro_frontend.py
-  - tests/reference/test_pykokoro_parity.py
-  - tests/test_consumer_contract.py
-  - tests/test_consumer_readiness.py
-  - tests/test_directives.py
-  - tests/test_explain.py
-  - tests/test_pauses.py
-  - utterplan/cli.py
-  - utterplan/directives.py
-  - utterplan/explain.py
-  - utterplan/model.py
-  - utterplan/parsers.py
-  - utterplan/planner.py
-  - utterplan/utterplan.schema.json
-  stats:
-    files_changed: 28
-    insertions: 1119
-    deletions: 153
-  inspected: true
-  inspected_paths:
-  - docs/consumer-guide.md
-  - docs/phase-a-completion.md
-  - docs/pykokoro-reference.md
-  - utterplan/directives.py
-  - utterplan/model.py
-  - utterplan/parsers.py
-  - utterplan/planner.py
-  observed_behavior: Expanded consumer contract with stable renderer input view, improved
-    directive handling, pause policy, and PyKokoro migration parity
-  public_impact: public
-  decision: accepted
-  stale: false
-  evidence_subject: 'feat: prepare for use in pykokoro'
-  target_entry_key: entry-0002
-  target_entry_id: entry-0002
-  notes: ''
-- sha: 66a88b6a7fbe4cf9e0247cfd81675050f5934fea
-  source_ref: git:66a88b6a7fbe4cf9e0247cfd81675050f5934fea
-  short_sha: 66a88b6
-  changed_paths:
-  - .github/workflows/tests.yml
-  - AGENTS.md
-  - README.md
-  - docs/architecture.md
-  - docs/cli.md
-  - docs/format.md
-  - docs/python-api.md
-  - pyproject.toml
-  - spec/schemas/v1.schema.json
-  - spec/utterplan.schema.json
-  - tests/schema_history/README.md
-  - tests/schema_history/v1/basic.json
-  - tests/schema_history/v1/directives.json
-  - tests/schema_history/v1/markers.json
-  - tests/schema_history/v1/multilingual.json
-  - tests/schema_history/v1/parenthetical.json
-  - tests/schema_history/v1/spokenform_offsets.json
-  - tests/schema_history/v1/ssmd_breaks.json
-  - tests/test_cli.py
-  - tests/test_migration_framework.py
-  - tests/test_schema_history.py
-  - tests/test_schema_registry.py
-  - utterplan/__init__.py
-  - utterplan/cli.py
-  - utterplan/exceptions.py
-  - utterplan/format.py
-  - utterplan/migration.py
-  - utterplan/migrations/__init__.py
-  - utterplan/migrations/registry.py
-  - utterplan/model.py
-  - utterplan/schema_registry.py
-  - utterplan/schemas/v1.schema.json
-  - utterplan/utterplan.schema.json
-  - utterplan/versioning.py
-  stats:
-    files_changed: 34
-    insertions: 2755
-    deletions: 28
-  inspected: true
-  inspected_paths:
-  - utterplan/migration.py
-  - utterplan/schema_registry.py
-  - utterplan/schemas/v1.schema.json
-  - tests/schema_history/
-  - tests/test_migration_framework.py
-  - tests/test_schema_history.py
-  - tests/test_schema_registry.py
-  observed_behavior: Added schema versioning with frozen v1 schema, migration framework,
-    registry, and historical fixture coverage
-  public_impact: public
-  decision: accepted
-  stale: false
-  evidence_subject: 'feat: versioning schema'
-  target_entry_key: entry-0003
-  target_entry_id: entry-0003
-  notes: ''
-- sha: c31f53fb4ded2a0e805ad5f75b20cf98e47fb169
-  source_ref: git:c31f53fb4ded2a0e805ad5f75b20cf98e47fb169
-  short_sha: c31f53f
-  changed_paths:
-  - .ledger/releaseledger/data/ledgers/main/events/events.jsonl
-  - .ledger/releaseledger/data/ledgers/main/releases/0.1.0/release.md
-  - .ledger/releaseledger/data/ledgers/main/releases/0.1.1/entries/entry-0001.md
-  - .ledger/releaseledger/data/ledgers/main/releases/0.1.1/release.md
-  - .ledger/releaseledger/data/ledgers/main/releases/0.1.2/audit/commit-audit.yaml
-  - .ledger/releaseledger/data/ledgers/main/releases/0.1.2/entries/entry-0001.md
-  - .ledger/releaseledger/data/ledgers/main/releases/0.1.2/entries/entry-0002.md
-  - .ledger/releaseledger/data/ledgers/main/releases/0.1.2/entries/entry-0003.md
-  - .ledger/releaseledger/data/ledgers/main/releases/0.1.2/release.md
-  - .ledger/releaseledger/work/0.1.2/audit-decisions.yaml
-  - .ledger/releaseledger/work/0.1.2/audit.yaml
-  - .ledger/releaseledger/work/0.1.2/entries.yaml
-  - .ledger/releaseledger/work/0.1.2/evidence/2c64e29.patch
-  - .ledger/releaseledger/work/0.1.2/evidence/4022753.patch
-  - .ledger/releaseledger/work/0.1.2/evidence/66a88b6.patch
-  - .ledger/releaseledger/work/0.1.2/evidence/manifest.json
-  - .ledger/releaseledger/work/0.1.2/range.json
-  - .ledger/releaseledger/write.lock
-  - docs/changelog.md
-  - tests/test_cli.py
-  - tests/test_migration_framework.py
-  - utterplan/cli.py
-  - utterplan/exceptions.py
-  - utterplan/migration.py
-  stats:
-    files_changed: 24
-    insertions: 5851
-    deletions: 18
-  inspected: true
-  inspected_paths:
-  - docs/changelog.md
-  observed_behavior: Updated changelog with release entries for v0.1.0, v0.1.1, and
-    v0.1.2
-  public_impact: docs
-  decision: accepted
-  stale: false
-  evidence_subject: 'doc: changelog'
-  target_entry_id: entry-0004
-- sha: 972d21bdfefcdc7ee04fc0d9ce00d1143dda4e78
-  source_ref: git:972d21bdfefcdc7ee04fc0d9ce00d1143dda4e78
-  short_sha: 972d21b
-  changed_paths:
-  - tests/reference/dump_pykokoro_frontend.py
-  stats:
-    files_changed: 1
-    insertions: 11
-    deletions: 1
-  inspected: true
-  inspected_paths:
-  - tests/reference/dump_pykokoro_frontend.py
-  observed_behavior: Fixed obsolete migration test for PyKokoro frontend dump
-  public_impact: none
-  decision: accepted
-  stale: false
-  evidence_subject: 'test: fix obsolete migration test'
-  target_entry_id: entry-0005
-- sha: 7cd977966475fd9c03056e5f25aaffd3501a846d
-  source_ref: git:7cd977966475fd9c03056e5f25aaffd3501a846d
-  short_sha: 7cd9779
-  changed_paths:
-  - .github/workflows/codecov.yml
-  - .github/workflows/tests.yml
-  - AGENTS.md
-  - README.md
-  - docs/conf.py
-  - docs/phase-a-completion.md
-  - docs/pykokoro-integration.md
-  - docs/pykokoro-reference.md
-  - tests/migration/test_semantic_migration_regressions.py
-  - tests/reference/__init__.py
-  - tests/reference/cases.py
-  - tests/reference/dump_pykokoro_frontend.py
-  - tests/reference/test_pykokoro_parity.py
-  stats:
-    files_changed: 13
-    insertions: 22
-    deletions: 611
-  inspected: true
-  inspected_paths:
-  - docs/pykokoro-reference.md
-  - tests/reference/dump_pykokoro_frontend.py
-  - tests/reference/test_pykokoro_parity.py
-  observed_behavior: Removed PyKokoro references and related test infrastructure
-  public_impact: public
-  decision: accepted
-  stale: false
-  evidence_subject: 'feat: remove ref to pykokoro'
-  target_entry_id: entry-0006
+  - sha: 402275374979b9372c1491072c4e29b642da523f
+    source_ref: git:402275374979b9372c1491072c4e29b642da523f
+    short_sha: "4022753"
+    changed_paths:
+      - README.md
+      - docs/cli.md
+      - docs/debugging.md
+      - repairledger.toml
+      - tests/test_cli.py
+      - tests/test_explain.py
+      - utterplan/cli.py
+      - utterplan/explain.py
+    stats:
+      files_changed: 8
+      insertions: 560
+      deletions: 10
+    inspected: true
+    inspected_paths:
+      - README.md
+      - docs/cli.md
+      - docs/debugging.md
+      - tests/test_cli.py
+      - tests/test_explain.py
+      - utterplan/cli.py
+      - utterplan/explain.py
+    observed_behavior:
+      Added explain CLI command that renders compiled plans as human-readable
+      speech narratives with optional detail mode
+    public_impact: public
+    decision: accepted
+    stale: false
+    evidence_subject: "feat: explain command added"
+    target_entry_key: entry-0001
+    target_entry_id: entry-0001
+    notes: ""
+  - sha: 2c64e291f0e568310afb7ca5e770ef2b691d9452
+    source_ref: git:2c64e291f0e568310afb7ca5e770ef2b691d9452
+    short_sha: 2c64e29
+    changed_paths:
+      - docs/cli.md
+      - docs/consumer-guide.md
+      - docs/phase-a-completion.md
+      - docs/pykokoro-reference.md
+      - spec/utterplan.schema.json
+      - tests/migration/__init__.py
+      - tests/migration/cases.py
+      - tests/migration/goldens/multilingual_preparation.json
+      - tests/migration/goldens/spokenform_numbers.json
+      - tests/migration/goldens/ssmd_break.json
+      - tests/migration/goldens/ssmd_language_detection.json
+      - tests/migration/goldens/ssmd_marker.json
+      - tests/migration/goldens/ssmd_pronunciation.json
+      - tests/migration/test_pykokoro_frontend_parity.py
+      - tests/reference/dump_pykokoro_frontend.py
+      - tests/reference/test_pykokoro_parity.py
+      - tests/test_consumer_contract.py
+      - tests/test_consumer_readiness.py
+      - tests/test_directives.py
+      - tests/test_explain.py
+      - tests/test_pauses.py
+      - utterplan/cli.py
+      - utterplan/directives.py
+      - utterplan/explain.py
+      - utterplan/model.py
+      - utterplan/parsers.py
+      - utterplan/planner.py
+      - utterplan/utterplan.schema.json
+    stats:
+      files_changed: 28
+      insertions: 1119
+      deletions: 153
+    inspected: true
+    inspected_paths:
+      - docs/consumer-guide.md
+      - docs/phase-a-completion.md
+      - docs/pykokoro-reference.md
+      - utterplan/directives.py
+      - utterplan/model.py
+      - utterplan/parsers.py
+      - utterplan/planner.py
+    observed_behavior:
+      Expanded consumer contract with stable renderer input view, improved
+      directive handling, pause policy, and PyKokoro migration parity
+    public_impact: public
+    decision: accepted
+    stale: false
+    evidence_subject: "feat: prepare for use in pykokoro"
+    target_entry_key: entry-0002
+    target_entry_id: entry-0002
+    notes: ""
+  - sha: 66a88b6a7fbe4cf9e0247cfd81675050f5934fea
+    source_ref: git:66a88b6a7fbe4cf9e0247cfd81675050f5934fea
+    short_sha: 66a88b6
+    changed_paths:
+      - .github/workflows/tests.yml
+      - AGENTS.md
+      - README.md
+      - docs/architecture.md
+      - docs/cli.md
+      - docs/format.md
+      - docs/python-api.md
+      - pyproject.toml
+      - spec/schemas/v1.schema.json
+      - spec/utterplan.schema.json
+      - tests/schema_history/README.md
+      - tests/schema_history/v1/basic.json
+      - tests/schema_history/v1/directives.json
+      - tests/schema_history/v1/markers.json
+      - tests/schema_history/v1/multilingual.json
+      - tests/schema_history/v1/parenthetical.json
+      - tests/schema_history/v1/spokenform_offsets.json
+      - tests/schema_history/v1/ssmd_breaks.json
+      - tests/test_cli.py
+      - tests/test_migration_framework.py
+      - tests/test_schema_history.py
+      - tests/test_schema_registry.py
+      - utterplan/__init__.py
+      - utterplan/cli.py
+      - utterplan/exceptions.py
+      - utterplan/format.py
+      - utterplan/migration.py
+      - utterplan/migrations/__init__.py
+      - utterplan/migrations/registry.py
+      - utterplan/model.py
+      - utterplan/schema_registry.py
+      - utterplan/schemas/v1.schema.json
+      - utterplan/utterplan.schema.json
+      - utterplan/versioning.py
+    stats:
+      files_changed: 34
+      insertions: 2755
+      deletions: 28
+    inspected: true
+    inspected_paths:
+      - utterplan/migration.py
+      - utterplan/schema_registry.py
+      - utterplan/schemas/v1.schema.json
+      - tests/schema_history/
+      - tests/test_migration_framework.py
+      - tests/test_schema_history.py
+      - tests/test_schema_registry.py
+    observed_behavior:
+      Added schema versioning with frozen v1 schema, migration framework,
+      registry, and historical fixture coverage
+    public_impact: public
+    decision: accepted
+    stale: false
+    evidence_subject: "feat: versioning schema"
+    target_entry_key: entry-0003
+    target_entry_id: entry-0003
+    notes: ""
+  - sha: c31f53fb4ded2a0e805ad5f75b20cf98e47fb169
+    source_ref: git:c31f53fb4ded2a0e805ad5f75b20cf98e47fb169
+    short_sha: c31f53f
+    changed_paths:
+      - .ledger/releaseledger/data/ledgers/main/events/events.jsonl
+      - .ledger/releaseledger/data/ledgers/main/releases/0.1.0/release.md
+      - .ledger/releaseledger/data/ledgers/main/releases/0.1.1/entries/entry-0001.md
+      - .ledger/releaseledger/data/ledgers/main/releases/0.1.1/release.md
+      - .ledger/releaseledger/data/ledgers/main/releases/0.1.2/audit/commit-audit.yaml
+      - .ledger/releaseledger/data/ledgers/main/releases/0.1.2/entries/entry-0001.md
+      - .ledger/releaseledger/data/ledgers/main/releases/0.1.2/entries/entry-0002.md
+      - .ledger/releaseledger/data/ledgers/main/releases/0.1.2/entries/entry-0003.md
+      - .ledger/releaseledger/data/ledgers/main/releases/0.1.2/release.md
+      - .ledger/releaseledger/work/0.1.2/audit-decisions.yaml
+      - .ledger/releaseledger/work/0.1.2/audit.yaml
+      - .ledger/releaseledger/work/0.1.2/entries.yaml
+      - .ledger/releaseledger/work/0.1.2/evidence/2c64e29.patch
+      - .ledger/releaseledger/work/0.1.2/evidence/4022753.patch
+      - .ledger/releaseledger/work/0.1.2/evidence/66a88b6.patch
+      - .ledger/releaseledger/work/0.1.2/evidence/manifest.json
+      - .ledger/releaseledger/work/0.1.2/range.json
+      - .ledger/releaseledger/write.lock
+      - docs/changelog.md
+      - tests/test_cli.py
+      - tests/test_migration_framework.py
+      - utterplan/cli.py
+      - utterplan/exceptions.py
+      - utterplan/migration.py
+    stats:
+      files_changed: 24
+      insertions: 5851
+      deletions: 18
+    inspected: true
+    inspected_paths:
+      - docs/changelog.md
+    observed_behavior:
+      Updated changelog with release entries for v0.1.0, v0.1.1, and
+      v0.1.2
+    public_impact: docs
+    decision: accepted
+    stale: false
+    evidence_subject: "doc: changelog"
+    target_entry_id: entry-0004
+  - sha: 972d21bdfefcdc7ee04fc0d9ce00d1143dda4e78
+    source_ref: git:972d21bdfefcdc7ee04fc0d9ce00d1143dda4e78
+    short_sha: 972d21b
+    changed_paths:
+      - tests/reference/dump_pykokoro_frontend.py
+    stats:
+      files_changed: 1
+      insertions: 11
+      deletions: 1
+    inspected: true
+    inspected_paths:
+      - tests/reference/dump_pykokoro_frontend.py
+    observed_behavior: Fixed obsolete migration test for PyKokoro frontend dump
+    public_impact: none
+    decision: accepted
+    stale: false
+    evidence_subject: "test: fix obsolete migration test"
+    target_entry_id: entry-0005
+  - sha: 7cd977966475fd9c03056e5f25aaffd3501a846d
+    source_ref: git:7cd977966475fd9c03056e5f25aaffd3501a846d
+    short_sha: 7cd9779
+    changed_paths:
+      - .github/workflows/codecov.yml
+      - .github/workflows/tests.yml
+      - AGENTS.md
+      - README.md
+      - docs/conf.py
+      - docs/phase-a-completion.md
+      - docs/pykokoro-integration.md
+      - docs/pykokoro-reference.md
+      - tests/migration/test_semantic_migration_regressions.py
+      - tests/reference/__init__.py
+      - tests/reference/cases.py
+      - tests/reference/dump_pykokoro_frontend.py
+      - tests/reference/test_pykokoro_parity.py
+    stats:
+      files_changed: 13
+      insertions: 22
+      deletions: 611
+    inspected: true
+    inspected_paths:
+      - docs/pykokoro-reference.md
+      - tests/reference/dump_pykokoro_frontend.py
+      - tests/reference/test_pykokoro_parity.py
+    observed_behavior: Removed PyKokoro references and related test infrastructure
+    public_impact: public
+    decision: accepted
+    stale: false
+    evidence_subject: "feat: remove ref to pykokoro"
+    target_entry_id: entry-0006

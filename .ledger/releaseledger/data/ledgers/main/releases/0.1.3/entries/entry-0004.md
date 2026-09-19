@@ -12,9 +12,9 @@ status: accepted
 audience: null
 scopes: []
 source_refs:
-- git:c31f53fb4ded2a0e805ad5f75b20cf98e47fb169
+  - git:c31f53fb4ded2a0e805ad5f75b20cf98e47fb169
 paths:
-- docs/changelog.md
+  - docs/changelog.md
 issues: []
 prs: []
 sources: []
